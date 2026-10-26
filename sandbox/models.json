@@ -1,0 +1,64 @@
+[
+  {
+    "name": "Ollama qwen2.5-coder:7b (single prompt)",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "qwen2.5-coder:7b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Same model as the team CrewAI framework. ollama pull qwen2.5-coder:7b"
+  },
+  {
+    "name": "CrewAI framework (qwen2.5-coder:7b)",
+    "type": "crewai",
+    "base_url": "http://localhost:11434",
+    "model": "ollama/qwen2.5-coder:7b",
+    "enabled": true,
+    "notes": "Yzzzz's theorist + analyst flow. Needs: pip install crewai. Design S only."
+  },
+  {
+    "name": "Ollama qwen2.5:3b (single prompt)",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "qwen2.5:3b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Smaller and faster. ollama pull qwen2.5:3b"
+  },
+  {
+    "name": "OpenAI",
+    "type": "chat",
+    "base_url": "https://api.openai.com/v1",
+    "model": "SET-MODEL-ID",
+    "api_key_env": "OPENAI_API_KEY",
+    "enabled": true,
+    "notes": "Set the model id from the provider's model list before use."
+  },
+  {
+    "name": "DeepSeek",
+    "type": "chat",
+    "base_url": "https://api.deepseek.com/v1",
+    "model": "SET-MODEL-ID",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "enabled": true,
+    "notes": "Set the model id from the provider's model list before use."
+  },
+  {
+    "name": "Gemini",
+    "type": "chat",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "model": "SET-MODEL-ID",
+    "api_key_env": "GEMINI_API_KEY",
+    "enabled": true,
+    "notes": "Gemini's OpenAI-compatible endpoint. Set the model id before use."
+  },
+  {
+    "name": "Claude",
+    "type": "chat",
+    "base_url": "https://api.anthropic.com/v1",
+    "model": "SET-MODEL-ID",
+    "api_key_env": "ANTHROPIC_API_KEY",
+    "enabled": true,
+    "notes": "Anthropic's OpenAI SDK compatibility endpoint. Set the model id before use."
+  }
+]

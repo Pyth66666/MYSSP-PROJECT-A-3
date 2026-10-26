@@ -1,0 +1,1625 @@
+{
+ "timestamp": "2026-10-26 08:07:36",
+ "law": "power_spring",
+ "seeds": 3,
+ "summary": [
+  {
+   "agent": "curve-fit baseline (no AI)",
+   "design": "S",
+   "runs": 3,
+   "pass_rate": 1.0,
+   "median_nrmse": 0.000163
+  },
+  {
+   "agent": "curve-fit baseline (no AI)",
+   "design": "A",
+   "runs": 3,
+   "pass_rate": 1.0,
+   "median_nrmse": 0.0
+  },
+  {
+   "agent": "curve-fit baseline (no AI)",
+   "design": "B",
+   "runs": 3,
+   "pass_rate": 1.0,
+   "median_nrmse": 0.000614
+  },
+  {
+   "agent": "curve-fit baseline (no AI)",
+   "design": "C",
+   "runs": 3,
+   "pass_rate": 1.0,
+   "median_nrmse": 0.010926
+  },
+  {
+   "agent": "Hooke assumption (no AI)",
+   "design": "S",
+   "runs": 3,
+   "pass_rate": 0.0,
+   "median_nrmse": 0.355526
+  },
+  {
+   "agent": "Hooke assumption (no AI)",
+   "design": "A",
+   "runs": 3,
+   "pass_rate": 0.0,
+   "median_nrmse": 0.480309
+  },
+  {
+   "agent": "Hooke assumption (no AI)",
+   "design": "B",
+   "runs": 3,
+   "pass_rate": 0.0,
+   "median_nrmse": 0.350567
+  },
+  {
+   "agent": "Hooke assumption (no AI)",
+   "design": "C",
+   "runs": 3,
+   "pass_rate": 0.0,
+   "median_nrmse": 0.441931
+  }
+ ],
+ "runs": [
+  {
+   "law": "power_spring",
+   "design": "S",
+   "seed": 0,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 5e-05,
+   "experiments_used": 0,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -4.9998*abs(x)**1.5002*sign(x)",
+   "parsed": "-4.9998*abs(x)**1.5002*sign(x)",
+   "reason": "normalised RMSE 0.01% <= 1%",
+   "notes": [
+    "used the given dataset",
+    "log-log fit: k=4.9998, p=1.5002"
+   ],
+   "log": [],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "S",
+   "seed": 1,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.000201,
+   "experiments_used": 0,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -4.9992*abs(x)**1.4998*sign(x)",
+   "parsed": "-4.9992*abs(x)**1.4998*sign(x)",
+   "reason": "normalised RMSE 0.02% <= 1%",
+   "notes": [
+    "used the given dataset",
+    "log-log fit: k=4.9992, p=1.4998"
+   ],
+   "log": [],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "S",
+   "seed": 2,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.000163,
+   "experiments_used": 0,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -4.9994*abs(x)**1.4998*sign(x)",
+   "parsed": "-4.9994*abs(x)**1.4998*sign(x)",
+   "reason": "normalised RMSE 0.02% <= 1%",
+   "notes": [
+    "used the given dataset",
+    "log-log fit: k=4.9994, p=1.4998"
+   ],
+   "log": [],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "A",
+   "seed": 0,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": true,
+   "nrmse": 0.0,
+   "experiments_used": 12,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -5.0000*abs(x)**1.5000*sign(x)",
+   "parsed": "-5.0000*abs(x)**1.5000*sign(x)",
+   "reason": "exact SymPy match",
+   "notes": [
+    "probe x=+3.00 -> F=-25.981",
+    "probe x=-2.50 -> F=+19.764",
+    "probe x=+2.00 -> F=-14.142",
+    "probe x=-1.50 -> F=+9.186",
+    "probe x=+1.00 -> F=-5.000",
+    "probe x=-0.60 -> F=+2.324",
+    "probe x=+2.60 -> F=-20.962",
+    "probe x=-2.20 -> F=+16.316",
+    "probe x=+1.40 -> F=-8.283",
+    "probe x=-0.90 -> F=+4.269",
+    "probe x=+0.40 -> F=-1.265",
+    "probe x=-3.00 -> F=+25.981",
+    "log-log fit: k=5.0000, p=1.5000"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    },
+    {
+     "measure_force": {
+      "x": 0.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -3.0
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "A",
+   "seed": 1,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": true,
+   "nrmse": 0.0,
+   "experiments_used": 12,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -5.0000*abs(x)**1.5000*sign(x)",
+   "parsed": "-5.0000*abs(x)**1.5000*sign(x)",
+   "reason": "exact SymPy match",
+   "notes": [
+    "probe x=+3.00 -> F=-25.981",
+    "probe x=-2.50 -> F=+19.764",
+    "probe x=+2.00 -> F=-14.142",
+    "probe x=-1.50 -> F=+9.186",
+    "probe x=+1.00 -> F=-5.000",
+    "probe x=-0.60 -> F=+2.324",
+    "probe x=+2.60 -> F=-20.962",
+    "probe x=-2.20 -> F=+16.316",
+    "probe x=+1.40 -> F=-8.283",
+    "probe x=-0.90 -> F=+4.269",
+    "probe x=+0.40 -> F=-1.265",
+    "probe x=-3.00 -> F=+25.981",
+    "log-log fit: k=5.0000, p=1.5000"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    },
+    {
+     "measure_force": {
+      "x": 0.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -3.0
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "A",
+   "seed": 2,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": true,
+   "nrmse": 0.0,
+   "experiments_used": 12,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -5.0000*abs(x)**1.5000*sign(x)",
+   "parsed": "-5.0000*abs(x)**1.5000*sign(x)",
+   "reason": "exact SymPy match",
+   "notes": [
+    "probe x=+3.00 -> F=-25.981",
+    "probe x=-2.50 -> F=+19.764",
+    "probe x=+2.00 -> F=-14.142",
+    "probe x=-1.50 -> F=+9.186",
+    "probe x=+1.00 -> F=-5.000",
+    "probe x=-0.60 -> F=+2.324",
+    "probe x=+2.60 -> F=-20.962",
+    "probe x=-2.20 -> F=+16.316",
+    "probe x=+1.40 -> F=-8.283",
+    "probe x=-0.90 -> F=+4.269",
+    "probe x=+0.40 -> F=-1.265",
+    "probe x=-3.00 -> F=+25.981",
+    "log-log fit: k=5.0000, p=1.5000"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    },
+    {
+     "measure_force": {
+      "x": 0.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -3.0
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "B",
+   "seed": 0,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.000614,
+   "experiments_used": 6,
+   "seconds": 0.01,
+   "tokens": 0,
+   "answer": "F(x) = -5.0033*abs(x)**1.4978*sign(x)",
+   "parsed": "-5.0033*abs(x)**1.4978*sign(x)",
+   "reason": "normalised RMSE 0.06% <= 2%",
+   "notes": [
+    "release x0=+3.00 -> 64 (x, m*a) points",
+    "release x0=-2.50 -> 66 (x, m*a) points",
+    "release x0=+2.00 -> 64 (x, m*a) points",
+    "release x0=-1.50 -> 63 (x, m*a) points",
+    "release x0=+1.00 -> 59 (x, m*a) points",
+    "release x0=-0.60 -> 59 (x, m*a) points",
+    "log-log fit: k=5.0033, p=1.4978"
+   ],
+   "log": [
+    {
+     "release": {
+      "x0": 3.0
+     }
+    },
+    {
+     "release": {
+      "x0": -2.5
+     }
+    },
+    {
+     "release": {
+      "x0": 2.0
+     }
+    },
+    {
+     "release": {
+      "x0": -1.5
+     }
+    },
+    {
+     "release": {
+      "x0": 1.0
+     }
+    },
+    {
+     "release": {
+      "x0": -0.6
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "B",
+   "seed": 1,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.000614,
+   "experiments_used": 6,
+   "seconds": 0.01,
+   "tokens": 0,
+   "answer": "F(x) = -5.0033*abs(x)**1.4978*sign(x)",
+   "parsed": "-5.0033*abs(x)**1.4978*sign(x)",
+   "reason": "normalised RMSE 0.06% <= 2%",
+   "notes": [
+    "release x0=+3.00 -> 64 (x, m*a) points",
+    "release x0=-2.50 -> 66 (x, m*a) points",
+    "release x0=+2.00 -> 64 (x, m*a) points",
+    "release x0=-1.50 -> 63 (x, m*a) points",
+    "release x0=+1.00 -> 59 (x, m*a) points",
+    "release x0=-0.60 -> 59 (x, m*a) points",
+    "log-log fit: k=5.0033, p=1.4978"
+   ],
+   "log": [
+    {
+     "release": {
+      "x0": 3.0
+     }
+    },
+    {
+     "release": {
+      "x0": -2.5
+     }
+    },
+    {
+     "release": {
+      "x0": 2.0
+     }
+    },
+    {
+     "release": {
+      "x0": -1.5
+     }
+    },
+    {
+     "release": {
+      "x0": 1.0
+     }
+    },
+    {
+     "release": {
+      "x0": -0.6
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "B",
+   "seed": 2,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.000614,
+   "experiments_used": 6,
+   "seconds": 0.01,
+   "tokens": 0,
+   "answer": "F(x) = -5.0033*abs(x)**1.4978*sign(x)",
+   "parsed": "-5.0033*abs(x)**1.4978*sign(x)",
+   "reason": "normalised RMSE 0.06% <= 2%",
+   "notes": [
+    "release x0=+3.00 -> 64 (x, m*a) points",
+    "release x0=-2.50 -> 66 (x, m*a) points",
+    "release x0=+2.00 -> 64 (x, m*a) points",
+    "release x0=-1.50 -> 63 (x, m*a) points",
+    "release x0=+1.00 -> 59 (x, m*a) points",
+    "release x0=-0.60 -> 59 (x, m*a) points",
+    "log-log fit: k=5.0033, p=1.4978"
+   ],
+   "log": [
+    {
+     "release": {
+      "x0": 3.0
+     }
+    },
+    {
+     "release": {
+      "x0": -2.5
+     }
+    },
+    {
+     "release": {
+      "x0": 2.0
+     }
+    },
+    {
+     "release": {
+      "x0": -1.5
+     }
+    },
+    {
+     "release": {
+      "x0": 1.0
+     }
+    },
+    {
+     "release": {
+      "x0": -0.6
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "C",
+   "seed": 0,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.010926,
+   "experiments_used": 10,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -4.9336*abs(x)**1.5207*sign(x)",
+   "parsed": "-4.9336*abs(x)**1.5207*sign(x)",
+   "reason": "normalised RMSE 1.09% <= 3%",
+   "notes": [
+    "probe x=+3.00 -> F=-26.880",
+    "probe x=-2.50 -> F=+19.922",
+    "probe x=+2.00 -> F=-14.188",
+    "probe x=-1.50 -> F=+9.053",
+    "probe x=+1.00 -> F=-5.129",
+    "probe x=-0.60 -> F=+2.321",
+    "probe x=+2.60 -> F=-21.291",
+    "probe x=-2.20 -> F=+15.830",
+    "probe x=+1.40 -> F=-8.155",
+    "probe x=-0.90 -> F=+4.006",
+    "log-log fit: k=4.9336, p=1.5207"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "C",
+   "seed": 1,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.003201,
+   "experiments_used": 10,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -4.9809*abs(x)**1.5049*sign(x)",
+   "parsed": "-4.9809*abs(x)**1.5049*sign(x)",
+   "reason": "normalised RMSE 0.32% <= 3%",
+   "notes": [
+    "probe x=+3.00 -> F=-26.106",
+    "probe x=-2.50 -> F=+19.534",
+    "probe x=+2.00 -> F=-13.926",
+    "probe x=-1.50 -> F=+9.407",
+    "probe x=+1.00 -> F=-4.931",
+    "probe x=-0.60 -> F=+2.327",
+    "probe x=+2.60 -> F=-20.198",
+    "probe x=-2.20 -> F=+16.915",
+    "probe x=+1.40 -> F=-8.645",
+    "probe x=-0.90 -> F=+4.074",
+    "log-log fit: k=4.9809, p=1.5049"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "C",
+   "seed": 2,
+   "agent": "curve-fit baseline (no AI)",
+   "kind": "baseline",
+   "passed": true,
+   "exact": false,
+   "nrmse": 0.027782,
+   "experiments_used": 10,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -4.8443*abs(x)**1.5228*sign(x)",
+   "parsed": "-4.8443*abs(x)**1.5228*sign(x)",
+   "reason": "normalised RMSE 2.78% <= 3%",
+   "notes": [
+    "probe x=+3.00 -> F=-26.923",
+    "probe x=-2.50 -> F=+19.830",
+    "probe x=+2.00 -> F=-14.276",
+    "probe x=-1.50 -> F=+9.040",
+    "probe x=+1.00 -> F=-4.586",
+    "probe x=-0.60 -> F=+2.259",
+    "probe x=+2.60 -> F=-20.559",
+    "probe x=-2.20 -> F=+14.851",
+    "probe x=+1.40 -> F=-8.186",
+    "probe x=-0.90 -> F=+4.250",
+    "log-log fit: k=4.8443, p=1.5228"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "S",
+   "seed": 0,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.266665,
+   "experiments_used": 0,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -6.5128*x",
+   "parsed": "-6.5128*x",
+   "reason": "normalised RMSE 26.67% > 1%",
+   "notes": [
+    "used the given dataset",
+    "assumed F=-kx, fitted k=6.5128"
+   ],
+   "log": [],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "S",
+   "seed": 1,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.408978,
+   "experiments_used": 0,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -3.2492*x",
+   "parsed": "-3.2492*x",
+   "reason": "normalised RMSE 40.90% > 1%",
+   "notes": [
+    "used the given dataset",
+    "assumed F=-kx, fitted k=3.2492"
+   ],
+   "log": [],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "S",
+   "seed": 2,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.355526,
+   "experiments_used": 0,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -3.5579*x",
+   "parsed": "-3.5579*x",
+   "reason": "normalised RMSE 35.55% > 1%",
+   "notes": [
+    "used the given dataset",
+    "assumed F=-kx, fitted k=3.5579"
+   ],
+   "log": [],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "A",
+   "seed": 0,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.480309,
+   "experiments_used": 12,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -7.7623*x",
+   "parsed": "-7.7623*x",
+   "reason": "normalised RMSE 48.03% > 1%",
+   "notes": [
+    "probe x=+3.00 -> F=-25.981",
+    "probe x=-2.50 -> F=+19.764",
+    "probe x=+2.00 -> F=-14.142",
+    "probe x=-1.50 -> F=+9.186",
+    "probe x=+1.00 -> F=-5.000",
+    "probe x=-0.60 -> F=+2.324",
+    "probe x=+2.60 -> F=-20.962",
+    "probe x=-2.20 -> F=+16.316",
+    "probe x=+1.40 -> F=-8.283",
+    "probe x=-0.90 -> F=+4.269",
+    "probe x=+0.40 -> F=-1.265",
+    "probe x=-3.00 -> F=+25.981",
+    "assumed F=-kx, fitted k=7.7623"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    },
+    {
+     "measure_force": {
+      "x": 0.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -3.0
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "A",
+   "seed": 1,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.480309,
+   "experiments_used": 12,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -7.7623*x",
+   "parsed": "-7.7623*x",
+   "reason": "normalised RMSE 48.03% > 1%",
+   "notes": [
+    "probe x=+3.00 -> F=-25.981",
+    "probe x=-2.50 -> F=+19.764",
+    "probe x=+2.00 -> F=-14.142",
+    "probe x=-1.50 -> F=+9.186",
+    "probe x=+1.00 -> F=-5.000",
+    "probe x=-0.60 -> F=+2.324",
+    "probe x=+2.60 -> F=-20.962",
+    "probe x=-2.20 -> F=+16.316",
+    "probe x=+1.40 -> F=-8.283",
+    "probe x=-0.90 -> F=+4.269",
+    "probe x=+0.40 -> F=-1.265",
+    "probe x=-3.00 -> F=+25.981",
+    "assumed F=-kx, fitted k=7.7623"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    },
+    {
+     "measure_force": {
+      "x": 0.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -3.0
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "A",
+   "seed": 2,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.480309,
+   "experiments_used": 12,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -7.7623*x",
+   "parsed": "-7.7623*x",
+   "reason": "normalised RMSE 48.03% > 1%",
+   "notes": [
+    "probe x=+3.00 -> F=-25.981",
+    "probe x=-2.50 -> F=+19.764",
+    "probe x=+2.00 -> F=-14.142",
+    "probe x=-1.50 -> F=+9.186",
+    "probe x=+1.00 -> F=-5.000",
+    "probe x=-0.60 -> F=+2.324",
+    "probe x=+2.60 -> F=-20.962",
+    "probe x=-2.20 -> F=+16.316",
+    "probe x=+1.40 -> F=-8.283",
+    "probe x=-0.90 -> F=+4.269",
+    "probe x=+0.40 -> F=-1.265",
+    "probe x=-3.00 -> F=+25.981",
+    "assumed F=-kx, fitted k=7.7623"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    },
+    {
+     "measure_force": {
+      "x": 0.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -3.0
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "B",
+   "seed": 0,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.350567,
+   "experiments_used": 6,
+   "seconds": 0.01,
+   "tokens": 0,
+   "answer": "F(x) = -7.0210*x",
+   "parsed": "-7.0210*x",
+   "reason": "normalised RMSE 35.06% > 2%",
+   "notes": [
+    "release x0=+3.00 -> 64 (x, m*a) points",
+    "release x0=-2.50 -> 66 (x, m*a) points",
+    "release x0=+2.00 -> 64 (x, m*a) points",
+    "release x0=-1.50 -> 63 (x, m*a) points",
+    "release x0=+1.00 -> 59 (x, m*a) points",
+    "release x0=-0.60 -> 59 (x, m*a) points",
+    "assumed F=-kx, fitted k=7.0210"
+   ],
+   "log": [
+    {
+     "release": {
+      "x0": 3.0
+     }
+    },
+    {
+     "release": {
+      "x0": -2.5
+     }
+    },
+    {
+     "release": {
+      "x0": 2.0
+     }
+    },
+    {
+     "release": {
+      "x0": -1.5
+     }
+    },
+    {
+     "release": {
+      "x0": 1.0
+     }
+    },
+    {
+     "release": {
+      "x0": -0.6
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "B",
+   "seed": 1,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.350567,
+   "experiments_used": 6,
+   "seconds": 0.01,
+   "tokens": 0,
+   "answer": "F(x) = -7.0210*x",
+   "parsed": "-7.0210*x",
+   "reason": "normalised RMSE 35.06% > 2%",
+   "notes": [
+    "release x0=+3.00 -> 64 (x, m*a) points",
+    "release x0=-2.50 -> 66 (x, m*a) points",
+    "release x0=+2.00 -> 64 (x, m*a) points",
+    "release x0=-1.50 -> 63 (x, m*a) points",
+    "release x0=+1.00 -> 59 (x, m*a) points",
+    "release x0=-0.60 -> 59 (x, m*a) points",
+    "assumed F=-kx, fitted k=7.0210"
+   ],
+   "log": [
+    {
+     "release": {
+      "x0": 3.0
+     }
+    },
+    {
+     "release": {
+      "x0": -2.5
+     }
+    },
+    {
+     "release": {
+      "x0": 2.0
+     }
+    },
+    {
+     "release": {
+      "x0": -1.5
+     }
+    },
+    {
+     "release": {
+      "x0": 1.0
+     }
+    },
+    {
+     "release": {
+      "x0": -0.6
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "B",
+   "seed": 2,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.350567,
+   "experiments_used": 6,
+   "seconds": 0.01,
+   "tokens": 0,
+   "answer": "F(x) = -7.0210*x",
+   "parsed": "-7.0210*x",
+   "reason": "normalised RMSE 35.06% > 2%",
+   "notes": [
+    "release x0=+3.00 -> 64 (x, m*a) points",
+    "release x0=-2.50 -> 66 (x, m*a) points",
+    "release x0=+2.00 -> 64 (x, m*a) points",
+    "release x0=-1.50 -> 63 (x, m*a) points",
+    "release x0=+1.00 -> 59 (x, m*a) points",
+    "release x0=-0.60 -> 59 (x, m*a) points",
+    "assumed F=-kx, fitted k=7.0210"
+   ],
+   "log": [
+    {
+     "release": {
+      "x0": 3.0
+     }
+    },
+    {
+     "release": {
+      "x0": -2.5
+     }
+    },
+    {
+     "release": {
+      "x0": 2.0
+     }
+    },
+    {
+     "release": {
+      "x0": -1.5
+     }
+    },
+    {
+     "release": {
+      "x0": 1.0
+     }
+    },
+    {
+     "release": {
+      "x0": -0.6
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "C",
+   "seed": 0,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.457067,
+   "experiments_used": 10,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -7.6316*x",
+   "parsed": "-7.6316*x",
+   "reason": "normalised RMSE 45.71% > 3%",
+   "notes": [
+    "probe x=+3.00 -> F=-26.880",
+    "probe x=-2.50 -> F=+19.922",
+    "probe x=+2.00 -> F=-14.188",
+    "probe x=-1.50 -> F=+9.053",
+    "probe x=+1.00 -> F=-5.129",
+    "probe x=-0.60 -> F=+2.321",
+    "probe x=+2.60 -> F=-21.291",
+    "probe x=-2.20 -> F=+15.830",
+    "probe x=+1.40 -> F=-8.155",
+    "probe x=-0.90 -> F=+4.006",
+    "assumed F=-kx, fitted k=7.6316"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "C",
+   "seed": 1,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.441931,
+   "experiments_used": 10,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -7.5461*x",
+   "parsed": "-7.5461*x",
+   "reason": "normalised RMSE 44.19% > 3%",
+   "notes": [
+    "probe x=+3.00 -> F=-26.106",
+    "probe x=-2.50 -> F=+19.534",
+    "probe x=+2.00 -> F=-13.926",
+    "probe x=-1.50 -> F=+9.407",
+    "probe x=+1.00 -> F=-4.931",
+    "probe x=-0.60 -> F=+2.327",
+    "probe x=+2.60 -> F=-20.198",
+    "probe x=-2.20 -> F=+16.915",
+    "probe x=+1.40 -> F=-8.645",
+    "probe x=-0.90 -> F=+4.074",
+    "assumed F=-kx, fitted k=7.5461"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  },
+  {
+   "law": "power_spring",
+   "design": "C",
+   "seed": 2,
+   "agent": "Hooke assumption (no AI)",
+   "kind": "baseline",
+   "passed": false,
+   "exact": false,
+   "nrmse": 0.436563,
+   "experiments_used": 10,
+   "seconds": 0.0,
+   "tokens": 0,
+   "answer": "F(x) = -7.5157*x",
+   "parsed": "-7.5157*x",
+   "reason": "normalised RMSE 43.66% > 3%",
+   "notes": [
+    "probe x=+3.00 -> F=-26.923",
+    "probe x=-2.50 -> F=+19.830",
+    "probe x=+2.00 -> F=-14.276",
+    "probe x=-1.50 -> F=+9.040",
+    "probe x=+1.00 -> F=-4.586",
+    "probe x=-0.60 -> F=+2.259",
+    "probe x=+2.60 -> F=-20.559",
+    "probe x=-2.20 -> F=+14.851",
+    "probe x=+1.40 -> F=-8.186",
+    "probe x=-0.90 -> F=+4.250",
+    "assumed F=-kx, fitted k=7.5157"
+   ],
+   "log": [
+    {
+     "measure_force": {
+      "x": 3.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -1.5
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.0
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": 2.6
+     }
+    },
+    {
+     "measure_force": {
+      "x": -2.2
+     }
+    },
+    {
+     "measure_force": {
+      "x": 1.4
+     }
+    },
+    {
+     "measure_force": {
+      "x": -0.9
+     }
+    }
+   ],
+   "truth": "F(x) = -5 * |x|^1.5 * sign(x)",
+   "timestamp": "2026-10-26 08:07:36"
+  }
+ ]
+}

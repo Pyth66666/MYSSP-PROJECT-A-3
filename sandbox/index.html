@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Physics Discovery Sandbox</title>
+<style>
+  :root {
+    --bg: #f4f4f2; --panel: #ffffff; --ink: #1c1c1e; --muted: #6a6a6e; --line: #dedede;
+    --accent: #2f5fd0; --truth: #c2410c; --force: #d33b32; --pass: #1f7a3d; --fail: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--ink); }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { margin: 0; font-size: 17px; font-weight: 650; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 16px 20px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .stage { position: relative; height: 430px; padding: 0; overflow: hidden; }
+  #view { width: 100%; height: 100%; display: block; }
+  #hud { position: absolute; left: 12px; top: 10px; font: 13px/1.5 ui-monospace, Consolas, monospace;
+         background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; }
+  #status { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: var(--muted);
+            background: rgba(255,255,255,.85); border-radius: 6px; padding: 4px 8px; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .charts canvas { width: 100%; height: 230px; display: block; }
+  h2 { font-size: 13px; margin: 0 0 8px; font-weight: 650; }
+  h3 { font-size: 12px; margin: 14px 0 6px; color: var(--muted); font-weight: 600;
+       text-transform: uppercase; letter-spacing: .04em; }
+  .tabs { display: flex; gap: 6px; }
+  .tabs button { flex: 1; padding: 8px 4px; border: 1px solid var(--line); background: var(--panel);
+                 border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink); }
+  .tabs button.on { border-color: var(--ink); font-weight: 650; }
+  .summary { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+  ul.pl { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; }
+  ul.pl li { margin: 2px 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .row label { font-size: 13px; min-width: 64px; }
+  .row input[type=range] { flex: 1; }
+  .row output { width: 52px; text-align: right; font: 13px ui-monospace, Consolas, monospace; }
+  button.act { padding: 8px 10px; border: 0; border-radius: 8px; background: var(--ink);
+               color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button.act.sec { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+  button.act:disabled { opacity: .4; cursor: default; }
+  input[type=text], select, input[type=number] { font: inherit; padding: 7px 8px; border: 1px solid var(--line);
+               border-radius: 8px; background: #fff; color: var(--ink); min-width: 0; }
+  input[type=text] { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  select { flex: 1; }
+  .budget { font-size: 13px; color: var(--muted); }
+  .budget b { color: var(--ink); }
+  .verdict { margin-top: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13px;
+             background: var(--bg); display: none; }
+  .verdict.pass { display: block; border-left: 3px solid var(--pass); }
+  .verdict.fail { display: block; border-left: 3px solid var(--fail); }
+  .verdict code { font-size: 12px; }
+  .toggle { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 12px;
+            padding-top: 12px; border-top: 1px solid var(--line); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  td.num { font-family: ui-monospace, Consolas, monospace; }
+  .results { grid-column: 1 / -1; }
+  details { margin-top: 10px; font-size: 13px; }
+  summary { cursor: pointer; color: var(--muted); }
+  pre#promptText { white-space: pre-wrap; font: 11.5px/1.45 ui-monospace, Consolas, monospace;
+                   background: var(--bg); border-radius: 8px; padding: 8px; max-height: 220px; overflow: auto; }
+  #log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 120px;
+         overflow: auto; margin-top: 8px; white-space: pre-wrap; }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; padding: 12px; }
+    .charts { grid-template-columns: 1fr; }
+    .stage { height: 340px; }
+  }
+</style>
+<script type="importmap">
+  { "imports": { "three": "/static/vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<header>
+  <h1>Physics Discovery Sandbox</h1>
+  <p>A block on a spring with a hidden force law. The agent gets data (design S) or runs experiments (A&ndash;C), proposes F(x), and the SymPy evaluator scores it against the hidden law.</p>
+</header>
+
+<main>
+  <section>
+    <div class="card stage">
+      <canvas id="view"></canvas>
+      <div id="hud">x = 0.000 m</div>
+      <div id="status">ready</div>
+    </div>
+    <div class="charts">
+      <div class="card"><h2>Force vs position</h2><canvas id="fchart"></canvas></div>
+      <div class="card"><h2>Position vs time (releases)</h2><canvas id="tchart"></canvas></div>
+    </div>
+  </section>
+
+  <aside class="card">
+    <div class="tabs" id="tabs"></div>
+    <p class="summary" id="dSummary"></p>
+    <ul class="pl" id="dPoints"></ul>
+
+    <h3>Run the experiment yourself</h3>
+    <div class="row">
+      <label for="seed" id="seedLabel">Seed</label>
+      <input type="number" id="seed" value="0" min="0" style="width:70px">
+      <button class="act sec" id="newBtn">New session</button>
+      <span class="budget" id="budget"></span>
+    </div>
+    <div id="probeTool">
+      <div class="row">
+        <label for="px">Hold at x</label>
+        <input type="range" id="px" min="-3" max="3" step="0.05" value="1.5">
+        <output id="pxv">1.50</output>
+      </div>
+      <div class="row"><button class="act" id="probeBtn">Measure force</button></div>
+    </div>
+    <div id="releaseTool">
+      <div class="row">
+        <label for="rx">Release x0</label>
+        <input type="range" id="rx" min="-3" max="3" step="0.05" value="2">
+        <output id="rxv">2.00</output>
+      </div>
+      <div class="row"><button class="act" id="releaseBtn">Release block</button></div>
+    </div>
+    <div id="staticTool">
+      <div class="row"><button class="act" id="playBtn">Play dataset</button>
+        <span class="budget" id="x0info"></span></div>
+      <details><summary>Prompt sent to the agent</summary><pre id="promptText"></pre></details>
+    </div>
+    <div class="row">
+      <input type="text" id="formula" placeholder="F(x) = -k*abs(x)**p*sign(x)" aria-label="Formula">
+      <button class="act" id="submitBtn">Submit</button>
+    </div>
+    <div class="verdict" id="verdict"></div>
+
+    <h3>Let an agent run it</h3>
+    <div class="row">
+      <select id="agentSel" aria-label="Agent"></select>
+      <button class="act" id="runBtn">Run</button>
+    </div>
+    <div id="log"></div>
+
+    <label class="toggle"><input type="checkbox" id="reveal"> Evaluator view: show the hidden law</label>
+    <p class="note">Agents never see this. It is for explaining the result to people.</p>
+  </aside>
+
+  <div class="card results">
+    <h2>Pipeline results: 50 CSV datasets <span class="note" id="pipeMeta"></span></h2>
+    <div id="pipeTable"><p class="note">No results yet. Run <code>python pipeline.py</code> in the lab folder, then reload.</p></div>
+    <h2 style="margin-top:18px">Sandbox design comparison <span class="note" id="resMeta"></span></h2>
+    <div id="resTable"><p class="note">No results yet. Run <code>python bench.py</code> in the lab folder, then reload.</p></div>
+  </div>
+</main>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "/static/vendor/OrbitControls.js";
+
+const $ = (id) => document.getElementById(id);
+const api = async (path, body) => {
+  const res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" },
+                                         body: JSON.stringify(body) } : undefined);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+};
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ------------------------------------------------------------------ state
+const S = {
+  designs: [], design: null, law: null, sid: null, budgetLeft: 0,
+  points: [], releases: [], curve: null, truth: null, busy: false,
+  x: 0, force: null, holding: false, staticData: [], traj: null,
+};
+
+// ------------------------------------------------------------- 3D scene
+const canvas = $("view");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf4f4f2);
+const camera = new THREE.PerspectiveCamera(40, 2, 0.1, 100);
+camera.position.set(0.4, 2.5, 6.3);
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(-0.6, -0.1, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.49;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xcfcfcf, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(3, 7, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 4, bottom: -4 });
+scene.add(sun);
+
+const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.75, ...extra });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), mat(0xebebe8));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -0.62; floor.receiveShadow = true;
+scene.add(floor);
+const grid = new THREE.GridHelper(30, 30, 0xd6d6d2, 0xe0e0dc);
+grid.position.y = -0.61; scene.add(grid);
+
+const WALL_X = -4.2, BLOCK = 0.6;
+const table = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.3, 1.4), mat(0xd9d9d4));
+table.position.set(-0.2, -0.47, 0); table.receiveShadow = true; table.castShadow = true;
+scene.add(table);
+const rail = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.04, 0.12), mat(0x9a9a96, { metalness: 0.4 }));
+rail.position.set(-0.15, -0.3, 0); scene.add(rail);
+const wall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.6, 1.4), mat(0x8c8c88));
+wall.position.set(WALL_X - 0.125, 0.18, 0); wall.castShadow = true; scene.add(wall);
+
+function textSprite(text, size = 0.32, color = "#6a6a6e") {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 64;
+  const g = c.getContext("2d");
+  g.font = "500 34px system-ui, sans-serif"; g.fillStyle = color;
+  g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 128, 32);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false }));
+  sp.scale.set(size * 4, size, 1);
+  return sp;
+}
+for (let m = -3; m <= 3; m++) {
+  const tick = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, m === 0 ? 1.0 : 0.5),
+                              mat(m === 0 ? 0x1c1c1e : 0x8a8a86));
+  tick.position.set(m, -0.31, 0); scene.add(tick);
+  const label = textSprite(m === 0 ? "x = 0" : `${m} m`, 0.26, "#4a4a4e");
+  label.position.set(m, -0.2, 0.9); scene.add(label);
+}
+
+const block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK, BLOCK, BLOCK), mat(0x3d4f7a));
+block.castShadow = true; scene.add(block);
+const massLabel = textSprite("1 kg", 0.26, "#ffffff");
+massLabel.position.set(0, 0, BLOCK / 2 + 0.01); block.add(massLabel);
+
+const springMat = mat(0x707070, { metalness: 0.6, roughness: 0.35 });
+let spring = null;
+function updateSpring(x) {
+  const start = WALL_X, end = x - BLOCK / 2, coils = 14, r = 0.17, seg = 240;
+  const pts = [];
+  for (let i = 0; i <= seg; i++) {
+    const u = i / seg;
+    const lead = u < 0.04 || u > 0.96;
+    const a = u * coils * Math.PI * 2;
+    pts.push(new THREE.Vector3(start + (end - start) * u,
+                               lead ? 0 : r * Math.sin(a), lead ? 0 : r * Math.cos(a)));
+  }
+  const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), seg, 0.022, 6, false);
+  if (spring) { spring.geometry.dispose(); spring.geometry = geo; }
+  else { spring = new THREE.Mesh(geo, springMat); spring.castShadow = true; scene.add(spring); }
+}
+
+const arrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 1, 0xd33b32, 0.22, 0.14);
+arrow.visible = false; scene.add(arrow);
+const probe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.3, 12), mat(0x1c1c1e));
+probe.visible = false; scene.add(probe);
+
+function setBlock(x, force = null, holding = false) {
+  S.x = x; S.force = force; S.holding = holding;
+  block.position.set(x, 0, 0);
+  updateSpring(x);
+  probe.visible = holding;
+  probe.position.set(x, BLOCK / 2 + 0.65, 0);
+  if (force !== null && Math.abs(force) > 1e-6) {
+    const len = Math.min(3, 0.12 + Math.abs(force) * 0.09);
+    arrow.position.set(x + Math.sign(force) * (BLOCK / 2), 0.0, 0);
+    arrow.setDirection(new THREE.Vector3(Math.sign(force), 0, 0));
+    arrow.setLength(len, 0.22, 0.14);
+    arrow.visible = true;
+  } else arrow.visible = false;
+  $("hud").textContent = `x = ${x.toFixed(3)} m` +
+    (force !== null ? `   F = ${force.toFixed(3)} N` : "");
+}
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== Math.floor(w * renderer.getPixelRatio()) ||
+      canvas.height !== Math.floor(h * renderer.getPixelRatio())) {
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+}
+renderer.setAnimationLoop(() => { resize(); controls.update(); renderer.render(scene, camera); });
+setBlock(0);
+
+// ------------------------------------------------------------- motions
+async function moveTo(x, ms = 600) {
+  const x0 = S.x, t0 = performance.now();
+  while (true) {
+    const u = Math.min(1, (performance.now() - t0) / ms);
+    const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+    setBlock(x0 + (x - x0) * e, null, true);
+    if (u >= 1) break;
+    await new Promise(requestAnimationFrame);
+  }
+}
+
+function truthForce(x) {
+  if (!S.truth) return null;
+  const xs = S.truth.x, fs = S.truth.F;
+  const i = Math.max(0, Math.min(xs.length - 2, Math.floor((x - xs[0]) / (xs[1] - xs[0]))));
+  const u = (x - xs[i]) / (xs[i + 1] - xs[i]);
+  return fs[i] + (fs[i + 1] - fs[i]) * u;
+}
+
+async function playRelease(obs, speed = 1) {
+  await moveTo(obs.x0, 450);
+  const t = obs.t, x = obs.x, T = t[t.length - 1], t0 = performance.now();
+  while (true) {
+    const now = ((performance.now() - t0) / 1000) * speed;
+    if (now >= T) break;
+    const i = Math.min(t.length - 2, Math.floor(now / (t[1] - t[0])));
+    const u = (now - t[i]) / (t[1] - t[0]);
+    const xi = x[i] + (x[i + 1] - x[i]) * u;
+    setBlock(xi, $("reveal").checked ? truthForce(xi) : null, false);
+    drawTimeChart(now);
+    await new Promise(requestAnimationFrame);
+  }
+  setBlock(x[x.length - 1], null, false);
+  drawTimeChart();
+}
+
+// ----------------------------------------------------------------- charts
+function setupCanvas(c) {
+  const r = window.devicePixelRatio || 1;
+  c.width = c.clientWidth * r; c.height = c.clientHeight * r;
+  const g = c.getContext("2d"); g.setTransform(r, 0, 0, r, 0, 0);
+  return [g, c.clientWidth, c.clientHeight];
+}
+
+function axes(g, W, H, xr, yr, xl, yl) {
+  const P = { l: 46, r: 10, t: 8, b: 28 };
+  const X = (v) => P.l + ((v - xr[0]) / (xr[1] - xr[0])) * (W - P.l - P.r);
+  const Y = (v) => H - P.b - ((v - yr[0]) / (yr[1] - yr[0])) * (H - P.t - P.b);
+  g.clearRect(0, 0, W, H);
+  g.font = "11px system-ui, sans-serif"; g.fillStyle = "#6a6a6e"; g.strokeStyle = "#e6e6e3";
+  g.lineWidth = 1;
+  const ticks = (a, b, n) => { const s = (b - a) / n; return Array.from({ length: n + 1 }, (_, i) => a + i * s); };
+  for (const v of ticks(xr[0], xr[1], 6)) {
+    g.beginPath(); g.moveTo(X(v), P.t); g.lineTo(X(v), H - P.b); g.stroke();
+    g.textAlign = "center"; g.fillText(+v.toFixed(1), X(v), H - P.b + 14);
+  }
+  for (const v of ticks(yr[0], yr[1], 4)) {
+    g.beginPath(); g.moveTo(P.l, Y(v)); g.lineTo(W - P.r, Y(v)); g.stroke();
+    g.textAlign = "right"; g.fillText(+v.toFixed(1), P.l - 6, Y(v) + 4);
+  }
+  g.strokeStyle = "#9a9a96";
+  if (yr[0] < 0 && yr[1] > 0) { g.beginPath(); g.moveTo(P.l, Y(0)); g.lineTo(W - P.r, Y(0)); g.stroke(); }
+  if (xr[0] < 0 && xr[1] > 0) { g.beginPath(); g.moveTo(X(0), P.t); g.lineTo(X(0), H - P.b); g.stroke(); }
+  g.textAlign = "right"; g.fillText(xl, W - P.r, H - 3);
+  g.save(); g.translate(11, P.t + 4); g.rotate(-Math.PI / 2); g.textAlign = "right"; g.fillText(yl, 0, 0); g.restore();
+  return [X, Y];
+}
+
+function line(g, X, Y, xs, ys, color, dash = [], width = 2) {
+  g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash); g.beginPath();
+  let pen = false;
+  xs.forEach((x, i) => {
+    const y = ys[i];
+    if (y === null || !isFinite(y)) { pen = false; return; }
+    pen ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y)); pen = true;
+  });
+  g.stroke(); g.setLineDash([]);
+}
+
+function legend(g, W, items) {
+  let x = W - 10;
+  g.font = "11px system-ui, sans-serif"; g.textAlign = "right";
+  for (const [label, color] of items.reverse()) {
+    g.fillStyle = "#1c1c1e"; g.fillText(label, x, 20);
+    x -= g.measureText(label).width + 6;
+    g.fillStyle = color; g.fillRect(x - 12, 15, 12, 3);
+    x -= 24;
+  }
+}
+
+function drawForceChart() {
+  const [g, W, H] = setupCanvas($("fchart"));
+  const ys = [...S.points.map((p) => p.F)];
+  if (S.curve) ys.push(...S.curve.F.filter((v) => v !== null && isFinite(v)));
+  if ($("reveal").checked && S.truth) ys.push(...S.truth.F);
+  const m = Math.max(5, ...ys.map(Math.abs)) * 1.1;
+  const [X, Y] = axes(g, W, H, [-3, 3], [-m, m], "x (m)", "F (N)");
+  const items = [];
+  if (S.curve) { line(g, X, Y, S.curve.x, S.curve.F, "#2f5fd0", [], 2.5); items.push(["submitted F(x)", "#2f5fd0"]); }
+  if ($("reveal").checked && S.truth) {
+    line(g, X, Y, S.truth.x, S.truth.F, "#c2410c", [6, 5]); items.push(["hidden law", "#c2410c"]);
+  }
+  g.fillStyle = "#1c1c1e";
+  for (const p of S.points) { g.beginPath(); g.arc(X(p.x), Y(p.F), 3.5, 0, 7); g.fill(); }
+  if (S.points.length) items.push([S.design && S.design.id === "S" ? "data sent to agent" : "measured", "#1c1c1e"]);
+  if (!S.points.length && !S.curve && !(S.truth && $("reveal").checked)) {
+    g.fillStyle = "#6a6a6e"; g.textAlign = "center";
+    g.fillText(S.design && S.design.id === "B"
+      ? "No force sensor in this design. Infer F from the motion." : "Measure the force to add points.", W / 2, H / 2 - 14);
+  }
+  legend(g, W, items);
+}
+
+function drawTimeChart(cursor = null) {
+  const [g, W, H] = setupCanvas($("tchart"));
+  const tmax = Math.max(4, ...S.releases.map((r) => r.t[r.t.length - 1]));
+  const [X, Y] = axes(g, W, H, [0, Math.ceil(tmax)], [-3.3, 3.3], "t (s)", "x (m)");
+  S.releases.forEach((r, i) => {
+    const last = i === S.releases.length - 1;
+    const xs = cursor !== null && last ? r.t.filter((t) => t <= cursor) : r.t;
+    line(g, X, Y, xs, r.x.slice(0, xs.length), last ? "#1c1c1e" : "#c4c4c0", [], last ? 2 : 1.4);
+  });
+  if (!S.releases.length) {
+    g.fillStyle = "#6a6a6e"; g.textAlign = "center";
+    g.fillText(S.design && !S.design.tools.includes("release") && S.design.id !== "S"
+      ? "No release tool in this design." : "Release the block to record its motion.", W / 2, H / 2 - 14);
+  }
+}
+
+function redraw() { drawForceChart(); drawTimeChart(); }
+window.addEventListener("resize", redraw);
+
+// --------------------------------------------------------------- session
+function setStatus(t) { $("status").textContent = t; }
+function setBusy(b) {
+  S.busy = b;
+  for (const id of ["probeBtn", "releaseBtn", "submitBtn", "runBtn", "newBtn", "playBtn"]) $(id).disabled = b;
+  if (!b) updateBudget();
+}
+function updateBudget() {
+  $("budget").innerHTML = S.sid && S.design.id !== "S" ? `budget <b>${S.budgetLeft}</b> / ${S.design.budget}` : "";
+  const none = S.budgetLeft <= 0;
+  $("probeBtn").disabled = S.busy || none;
+  $("releaseBtn").disabled = S.busy || none;
+}
+
+function selectDesign(id) {
+  S.design = S.designs.find((d) => d.id === id);
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.id === id));
+  const d = S.design;
+  $("dSummary").textContent = d.summary;
+  $("dPoints").innerHTML = d.strengths.map((s) => `<li>+ ${s}</li>`).join("") +
+                           d.limits.map((s) => `<li>&minus; ${s}</li>`).join("");
+  $("probeTool").style.display = d.tools.includes("measure_force") ? "" : "none";
+  $("releaseTool").style.display = d.tools.includes("release") ? "" : "none";
+  $("staticTool").style.display = d.id === "S" ? "" : "none";
+  $("seedLabel").textContent = d.id === "S" ? "Dataset" : "Seed";
+  $("seed").max = d.id === "S" ? 49 : 9999;
+  newSession();
+}
+
+async function newSession() {
+  const data = await api("/api/session", { design: S.design.id, seed: +$("seed").value || 0, law: S.law });
+  S.sid = data.sid; S.budgetLeft = data.card.budget;
+  S.points = []; S.releases = []; S.curve = null;
+  S.staticData = data.card.data || [];
+  S.traj = data.trajectory ? { x0: data.x0, t: data.trajectory.t, x: data.trajectory.x } : null;
+  if (S.traj) {
+    S.points = [...S.staticData];
+    S.releases = [S.traj];
+    $("promptText").textContent = data.prompt;
+    $("x0info").textContent = `x0 = ${data.x0.toFixed(2)} m, 100 rows, 20 sent`;
+  }
+  $("verdict").className = "verdict"; $("log").textContent = "";
+  setBlock(0); updateBudget(); redraw();
+  setStatus(`design ${S.design.id}: new session, seed ${+$("seed").value || 0}`);
+}
+
+async function doExperiment(action) {
+  setBusy(true);
+  try {
+    const obs = await api("/api/experiment", { sid: S.sid, action });
+    S.budgetLeft = obs.budget_left;
+    updateBudget();
+    await showObservation(action, obs, 1);
+  } catch (e) { setStatus(e.message); }
+  setBusy(false);
+}
+
+async function showObservation(action, obs, speed) {
+  if (action.measure_force) {
+    setStatus(`measuring force at x = ${obs.x.toFixed(2)} m`);
+    await moveTo(obs.x);
+    setBlock(obs.x, obs.F, true);
+    S.points.push({ x: obs.x, F: obs.F });
+    drawForceChart();
+    await sleep(350 / speed);
+  } else {
+    setStatus(`release from x0 = ${obs.x0.toFixed(2)} m`);
+    S.releases.push(obs);
+    await playRelease(obs, speed);
+  }
+}
+
+function showVerdict(r, answer, extra = "") {
+  const v = $("verdict");
+  v.className = "verdict " + (r.passed ? "pass" : "fail");
+  v.innerHTML = `<b>${r.passed ? "PASS" : "FAIL"}</b> &middot; ${r.reason}<br>` +
+    `<code>${(r.parsed || answer || "(no answer)").replace(/</g, "&lt;")}</code>` +
+    `<br><span class="note">experiments used: ${r.experiments_used}${extra}</span>` +
+    ($("reveal").checked ? `<br><span class="note">hidden law: ${r.truth}</span>` : "");
+}
+
+$("probeBtn").onclick = () => doExperiment({ measure_force: { x: +$("px").value } });
+$("releaseBtn").onclick = () => doExperiment({ release: { x0: +$("rx").value } });
+$("px").oninput = () => { $("pxv").textContent = (+$("px").value).toFixed(2); };
+$("rx").oninput = () => { $("rxv").textContent = (+$("rx").value).toFixed(2); };
+$("newBtn").onclick = newSession;
+$("playBtn").onclick = async () => {
+  if (!S.traj) return;
+  setBusy(true);
+  setStatus(`playing dataset ${+$("seed").value || 0}: released at x0 = ${S.traj.x0.toFixed(2)} m, dt = 0.1 s`);
+  await playRelease(S.traj, 1);
+  setBusy(false);
+};
+$("submitBtn").onclick = async () => {
+  const answer = $("formula").value.trim();
+  if (!answer) return;
+  setBusy(true);
+  try {
+    const out = await api("/api/submit", { sid: S.sid, answer });
+    S.curve = out.curve; S.budgetLeft = 0;
+    showVerdict(out.result, answer);
+    drawForceChart();
+    setStatus("submitted. Start a new session to try again.");
+  } catch (e) { setStatus(e.message); }
+  setBusy(false);
+};
+
+$("runBtn").onclick = async () => {
+  const name = $("agentSel").value;
+  setBusy(true);
+  const isStatic = S.design.id === "S";
+  if (!isStatic) { S.points = []; S.releases = []; }
+  S.curve = null; $("verdict").className = "verdict";
+  redraw();
+  setStatus(`${name} is running...`);
+  $("log").textContent = `${name}: thinking (LLM agents can take a while)...`;
+  try {
+    const out = await api("/api/run", { design: S.design.id, seed: +$("seed").value || 0, agent: name, law: S.law });
+    $("log").textContent = out.notes.join("\n");
+    S.budgetLeft = 0;
+    for (const entry of out.log) {
+      const kind = Object.keys(entry.action)[0];
+      await showObservation(entry.action, { ...entry.observation }, kind === "release" ? 2 : 1.5);
+    }
+    S.curve = out.curve; drawForceChart();
+    showVerdict(out.result, out.answer,
+      ` &middot; ${out.seconds}s${out.tokens ? ` &middot; ${out.tokens} tokens` : ""}`);
+    setStatus(`${name}: ${out.result.passed ? "PASS" : "FAIL"}`);
+  } catch (e) { setStatus(e.message); $("log").textContent = e.message; }
+  setBusy(false);
+  S.sid = null; updateBudget();
+};
+
+$("reveal").onchange = async () => {
+  if ($("reveal").checked && !S.truth) S.truth = await api(`/api/truth?law=${S.law}`);
+  redraw();
+};
+
+async function loadPipeline() {
+  const r = await api("/api/pipeline");
+  if (!r.summary) return;
+  $("pipeMeta").textContent = `(${r.timestamp}, law: ${r.law}, team prompt, SymPy evaluator)`;
+  const pct = (v) => (v === null || v === undefined) ? "-" : (v * 100).toFixed(v < 0.01 && v > 0 ? 2 : 0) + "%";
+  $("pipeTable").innerHTML = `<table><thead><tr><th>Agent</th><th>Datasets</th><th>Pass</th>` +
+    `<th>Exact SymPy match</th><th>Median error</th><th>Median time</th></tr></thead><tbody>` +
+    r.summary.map((s) => `<tr><td>${s.agent}</td><td class="num">${s.datasets}</td>` +
+      `<td class="num">${pct(s.pass_rate)}</td><td class="num">${pct(s.exact_rate)}</td>` +
+      `<td class="num">${s.median_nrmse === null ? "-" : (s.median_nrmse * 100).toFixed(2) + "%"}</td>` +
+      `<td class="num">${s.median_seconds}s</td></tr>`).join("") +
+    `</tbody></table><p class="note">Pass = exact SymPy match, or normalised RMSE &le; 1% on unseen positions (both signs of x).</p>`;
+}
+
+async function loadResults() {
+  const r = await api("/api/results");
+  if (!r.summary) return;
+  $("resMeta").textContent = `(${r.timestamp}, law: ${r.law}, ${r.seeds} seeds per design)`;
+  const agentsList = [...new Set(r.summary.map((s) => s.agent))];
+  const order = ["S", "A", "B", "C"];
+  const designs = [...new Set(r.summary.map((s) => s.design))]
+    .sort((a, b) => [a, b].map((d) => (order.indexOf(d) + 1 || 99)).reduce((x, y) => x - y));
+  const cell = (a, d) => {
+    const s = r.summary.find((x) => x.agent === a && x.design === d);
+    if (!s) return "<td>-</td>";
+    const med = s.median_nrmse === null ? "-" : (s.median_nrmse * 100).toFixed(2) + "%";
+    return `<td class="num">${Math.round(s.pass_rate * 100)}% <span class="note">(err ${med})</span></td>`;
+  };
+  $("resTable").innerHTML = `<table><thead><tr><th>Agent</th>${designs.map((d) =>
+    `<th>Design ${d}: ${S.designs.find((x) => x.id === d)?.title || ""}</th>`).join("")}</tr></thead><tbody>` +
+    agentsList.map((a) => `<tr><td>${a}</td>${designs.map((d) => cell(a, d)).join("")}</tr>`).join("") +
+    `</tbody></table><p class="note">Pass rate over seeds; err = median normalised RMSE against the hidden law on unseen positions.</p>`;
+}
+
+// ------------------------------------------------------------------- init
+(async () => {
+  try {
+    const d = await api("/api/designs");
+    S.designs = d.designs; S.law = d.default_law;
+    $("tabs").innerHTML = S.designs.map((x) =>
+      `<button data-id="${x.id}">${x.id} &middot; ${x.title}</button>`).join("");
+    document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => !S.busy && selectDesign(b.dataset.id)));
+    const a = await api("/api/agents");
+    $("agentSel").innerHTML = a.agents.map((x) => `<option>${x.name}</option>`).join("");
+    await selectDesign("S");
+    await loadPipeline();
+    await loadResults();
+  } catch (e) {
+    setStatus("cannot reach the server: start it with python server.py");
+  }
+})();
+</script>
+</body>
+</html>

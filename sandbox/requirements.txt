@@ -1,0 +1,2 @@
+sympy>=1.12      # exact SymPy match in the evaluator (recommended)
+# crewai>=1.0    # only for the CrewAI framework agent: pip install crewai
