@@ -1,0 +1,25 @@
+timestamp	law	design	seed	agent	kind	passed	exact	nrmse	experiments_used	seconds	tokens	answer	parsed	reason
+2026-10-26 08:07:36	power_spring	S	0	curve-fit baseline (no AI)	baseline	True	False	5e-05	0	0.0	0	F(x) = -4.9998*abs(x)**1.5002*sign(x)	-4.9998*abs(x)**1.5002*sign(x)	normalised RMSE 0.01% <= 1%
+2026-10-26 08:07:36	power_spring	S	1	curve-fit baseline (no AI)	baseline	True	False	0.000201	0	0.0	0	F(x) = -4.9992*abs(x)**1.4998*sign(x)	-4.9992*abs(x)**1.4998*sign(x)	normalised RMSE 0.02% <= 1%
+2026-10-26 08:07:36	power_spring	S	2	curve-fit baseline (no AI)	baseline	True	False	0.000163	0	0.0	0	F(x) = -4.9994*abs(x)**1.4998*sign(x)	-4.9994*abs(x)**1.4998*sign(x)	normalised RMSE 0.02% <= 1%
+2026-10-26 08:07:36	power_spring	A	0	curve-fit baseline (no AI)	baseline	True	True	0.0	12	0.0	0	F(x) = -5.0000*abs(x)**1.5000*sign(x)	-5.0000*abs(x)**1.5000*sign(x)	exact SymPy match
+2026-10-26 08:07:36	power_spring	A	1	curve-fit baseline (no AI)	baseline	True	True	0.0	12	0.0	0	F(x) = -5.0000*abs(x)**1.5000*sign(x)	-5.0000*abs(x)**1.5000*sign(x)	exact SymPy match
+2026-10-26 08:07:36	power_spring	A	2	curve-fit baseline (no AI)	baseline	True	True	0.0	12	0.0	0	F(x) = -5.0000*abs(x)**1.5000*sign(x)	-5.0000*abs(x)**1.5000*sign(x)	exact SymPy match
+2026-10-26 08:07:36	power_spring	B	0	curve-fit baseline (no AI)	baseline	True	False	0.000614	6	0.01	0	F(x) = -5.0033*abs(x)**1.4978*sign(x)	-5.0033*abs(x)**1.4978*sign(x)	normalised RMSE 0.06% <= 2%
+2026-10-26 08:07:36	power_spring	B	1	curve-fit baseline (no AI)	baseline	True	False	0.000614	6	0.01	0	F(x) = -5.0033*abs(x)**1.4978*sign(x)	-5.0033*abs(x)**1.4978*sign(x)	normalised RMSE 0.06% <= 2%
+2026-10-26 08:07:36	power_spring	B	2	curve-fit baseline (no AI)	baseline	True	False	0.000614	6	0.01	0	F(x) = -5.0033*abs(x)**1.4978*sign(x)	-5.0033*abs(x)**1.4978*sign(x)	normalised RMSE 0.06% <= 2%
+2026-10-26 08:07:36	power_spring	C	0	curve-fit baseline (no AI)	baseline	True	False	0.010926	10	0.0	0	F(x) = -4.9336*abs(x)**1.5207*sign(x)	-4.9336*abs(x)**1.5207*sign(x)	normalised RMSE 1.09% <= 3%
+2026-10-26 08:07:36	power_spring	C	1	curve-fit baseline (no AI)	baseline	True	False	0.003201	10	0.0	0	F(x) = -4.9809*abs(x)**1.5049*sign(x)	-4.9809*abs(x)**1.5049*sign(x)	normalised RMSE 0.32% <= 3%
+2026-10-26 08:07:36	power_spring	C	2	curve-fit baseline (no AI)	baseline	True	False	0.027782	10	0.0	0	F(x) = -4.8443*abs(x)**1.5228*sign(x)	-4.8443*abs(x)**1.5228*sign(x)	normalised RMSE 2.78% <= 3%
+2026-10-26 08:07:36	power_spring	S	0	Hooke assumption (no AI)	baseline	False	False	0.266665	0	0.0	0	F(x) = -6.5128*x	-6.5128*x	normalised RMSE 26.67% > 1%
+2026-10-26 08:07:36	power_spring	S	1	Hooke assumption (no AI)	baseline	False	False	0.408978	0	0.0	0	F(x) = -3.2492*x	-3.2492*x	normalised RMSE 40.90% > 1%
+2026-10-26 08:07:36	power_spring	S	2	Hooke assumption (no AI)	baseline	False	False	0.355526	0	0.0	0	F(x) = -3.5579*x	-3.5579*x	normalised RMSE 35.55% > 1%
+2026-10-26 08:07:36	power_spring	A	0	Hooke assumption (no AI)	baseline	False	False	0.480309	12	0.0	0	F(x) = -7.7623*x	-7.7623*x	normalised RMSE 48.03% > 1%
+2026-10-26 08:07:36	power_spring	A	1	Hooke assumption (no AI)	baseline	False	False	0.480309	12	0.0	0	F(x) = -7.7623*x	-7.7623*x	normalised RMSE 48.03% > 1%
+2026-10-26 08:07:36	power_spring	A	2	Hooke assumption (no AI)	baseline	False	False	0.480309	12	0.0	0	F(x) = -7.7623*x	-7.7623*x	normalised RMSE 48.03% > 1%
+2026-10-26 08:07:36	power_spring	B	0	Hooke assumption (no AI)	baseline	False	False	0.350567	6	0.01	0	F(x) = -7.0210*x	-7.0210*x	normalised RMSE 35.06% > 2%
+2026-10-26 08:07:36	power_spring	B	1	Hooke assumption (no AI)	baseline	False	False	0.350567	6	0.01	0	F(x) = -7.0210*x	-7.0210*x	normalised RMSE 35.06% > 2%
+2026-10-26 08:07:36	power_spring	B	2	Hooke assumption (no AI)	baseline	False	False	0.350567	6	0.01	0	F(x) = -7.0210*x	-7.0210*x	normalised RMSE 35.06% > 2%
+2026-10-26 08:07:36	power_spring	C	0	Hooke assumption (no AI)	baseline	False	False	0.457067	10	0.0	0	F(x) = -7.6316*x	-7.6316*x	normalised RMSE 45.71% > 3%
+2026-10-26 08:07:36	power_spring	C	1	Hooke assumption (no AI)	baseline	False	False	0.441931	10	0.0	0	F(x) = -7.5461*x	-7.5461*x	normalised RMSE 44.19% > 3%
+2026-10-26 08:07:36	power_spring	C	2	Hooke assumption (no AI)	baseline	False	False	0.436563	10	0.0	0	F(x) = -7.5157*x	-7.5157*x	normalised RMSE 43.66% > 3%
