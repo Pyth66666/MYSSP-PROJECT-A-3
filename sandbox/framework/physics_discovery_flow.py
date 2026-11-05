@@ -1,5 +1,8 @@
 import re
 import json
+import argparse
+import subprocess
+import sys
 from pydantic import BaseModel
 from crewai import LLM, Agent, Crew, Task, Process
 from crewai.flow.flow import Flow, listen, router, start
@@ -39,9 +42,35 @@ class DiscoveryState(BaseModel):
             )
     
 
-'''def read_data():
-    with open("output_data.json", "w") as f:
-        json.dump(data_packet, f, indent=4)'''
+SANDBOX_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+GENERATOR = os.path.join(SANDBOX_DIR, "generate_data.py")
+DATA_FILE = os.path.join(SANDBOX_DIR, "runs", "output_data.json")
+
+
+def generate_data(dataset: int = 0, path: str = DATA_FILE) -> str:
+    """Run the sandbox data generator, which simulates the spring and writes the JSON packet.
+
+    The generator runs as its own process, so this file never imports the hidden law.
+    """
+    subprocess.run(
+        [sys.executable, GENERATOR, "--json", path, "--dataset", str(dataset)],
+        check=True, capture_output=True, text=True,
+    )
+    return path
+
+
+def read_data(path: str = DATA_FILE) -> dict:
+    """Read the JSON packet written by the data generator.
+
+    Returns {"x_value": [...], "y_value": [...]}. Raises instead of returning empty
+    lists, so a failed generator can never silently become "no data".
+    """
+    with open(path, encoding="utf-8") as f:
+        packet = json.load(f)
+    x, y = packet.get("x_value"), packet.get("y_value")
+    if not x or not y or len(x) != len(y):
+        raise ValueError(f"{path} must hold non-empty x_value and y_value lists of equal length.")
+    return {"x_value": [float(v) for v in x], "y_value": [float(v) for v in y]}
 
 
 @tool("SymPy Equation Solver and Simplifier")
@@ -257,17 +286,33 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run the physics discovery flow on generated data.")
+    parser.add_argument("--dataset", type=int, default=0,
+                        help="which of the generator's datasets to use (default 0)")
+    args = parser.parse_args()
+
+    # Sandbox generator -> JSON packet -> read_data(): no hand-typed data anywhere.
+    try:
+        data = read_data(generate_data(args.dataset))
+    except Exception as e:
+        print(f"Data generation failed: {e}")
+        print(getattr(e, "stderr", "") or "")
+        sys.exit(1)
+
     try:
         flow = PhysicsLawDiscovery()
         report = flow.kickoff(inputs={
             "phenomenon": "Find the relationship between position and force.",
-            "x_value": [1, 2, 3, 4, 5, 6],
-            "y_value": [2.00, 5.66, 10.39, 16.00, 22.36, 29.39]   #Simulation data
+            "x_value": data["x_value"],
+            "y_value": data["y_value"],
         })
         print(report)
 
     except Exception:
         print(make_theorist().llm.model, make_analyst().llm.model)
         print("LLM calls failed. Check that the LLM server is running and reachable at the specified base_url.")
+
+    
+
 
     
