@@ -1,4 +1,5 @@
 import re
+import json
 from pydantic import BaseModel
 from crewai import LLM, Agent, Crew, Task, Process
 from crewai.flow.flow import Flow, listen, router, start
@@ -22,9 +23,26 @@ local_llm = LLM(
 class DiscoveryState(BaseModel):
     phenomenon: str = ""
     hypotheses: str = ""
+    x_value: list[float] = []
+    y_value: list[float] = []
     test_results: str = ""
     refined_results: str = ""
     human_input: str = ""
+
+    @property                          # <-- CHANGED: new helper, turns the lists into text
+    def data(self) -> str:             
+        if not self.x_value or not self.y_value:
+            return ""
+        return (
+                "x (position): " + ",".join(map(str, self.x_value)) + "\n"
+                "y (force): " + ",".join(map(str, self.y_value))
+            )
+    
+
+'''def read_data():
+    with open("output_data.json", "w") as f:
+        json.dump(data_packet, f, indent=4)'''
+
 
 @tool("SymPy Equation Solver and Simplifier")
 def symbolic_math_tool(equation_str: str, solve_for_var: str) -> str:
@@ -47,28 +65,43 @@ def symbolic_math_tool(equation_str: str, solve_for_var: str) -> str:
   except Exception as e:
     return f"Error in symbolic calculation: {str(e)}"
 
-@tool("NumPy Polynomial Curve Fit Tool")
-def numpy_curve_fit_tool(x_values_csv: str, y_values_csv: str, degree: int = 1) -> str:
-  """Calculates the coefficients for a line or curve of best fit using NumPy.
-  Provide comma-separated numbers for x and y, and the polynomial degree (1 for linear, 2 for quadratic).
-  Example: x='1,2,3,4', y='2.1,3.9,6.2,8.0', degree=1
+@tool("NumPy Curve Fit Tool")
+def numpy_curve_fit_tool(x_values_csv: str, y_values_csv: str, degree: int = 1, model: str = "polynomial") -> str:
+  """Fits a curve to data using NumPy.
+  Provide comma-separated numbers for x and y.
+  model='polynomial': fits a polynomial of the given degree (1 linear, 2 quadratic).
+  model='power': fits y = a * x**b (x and y must be positive); the exponent b is found directly.
+  Example: x='1,2,3,4', y='2.1,3.9,6.2,8.0', degree=1, model='polynomial'
+  Example: x='1,2,3,4', y='2,5.66,10.39,16', model='power'
   """
   try:
     x = np.array([float(i) for i in x_values_csv.split(",")])
     y = np.array([float(i) for i in y_values_csv.split(",")])
-
-    # Fit polynomial curve of best fit
-    coefficients = np.polyfit(x, y, degree)
-
-    # Calculate R-squared for accuracy check
-    p = np.poly1d(coefficients)
-    y_pred = p(x)
-    correlation_matrix = np.corrcoef(x, y)
-    r_squared = correlation_matrix[0, 1] ** 2
-
+ 
+    if model == "power":
+      # FIX 2: power-law fit via log-log linear regression -> y = a * x**b
+      if np.any(x <= 0) or np.any(y <= 0):
+        return "Error in curve fitting: power model needs all x and y values > 0."
+      b, ln_a = np.polyfit(np.log(x), np.log(y), 1)
+      a = float(np.exp(ln_a))
+      y_pred = a * x ** b
+      expression = f"y = {a:.6g} * x^{b:.6g}"
+      coeff_text = f"a = {a:.6g}, exponent b = {b:.6g}"
+    else:
+      coefficients = np.polyfit(x, y, degree)
+      y_pred = np.poly1d(coefficients)(x)
+      expression = str(np.poly1d(coefficients))
+      coeff_text = f"Coefficients (highest degree first): {list(coefficients)}"
+ 
+    # FIX 3: R-squared computed from the residuals of the actual fitted model
+    ss_res = float(np.sum((y - y_pred) ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else float("nan")
+ 
     return (
-        f"Curve Fit Coefficients (highest degree first): {list(coefficients)}\n"
-        f"Mathematical Model Expression: {coefficients}\n"
+        f"Model: {model}\n"
+        f"{coeff_text}\n"
+        f"Mathematical Model Expression: {expression}\n"
         f"R-Squared Accuracy: {round(r_squared, 4)}"
     )
   except Exception as e:
@@ -124,6 +157,7 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
         design = Task(
             description=(
                 f"Hypotheses for {self.state.phenomenon}:\n{self.state.hypotheses}\n\n"
+                f"Measured data:\n{self.state.data}\n\n"
                 "For each hypothesis define a simulation or analytical test with "
                 "predictions, and what result would refute it."
             ),
@@ -138,10 +172,11 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
                 "analysis, consistency with known results) and score each hypothesis from "
                 "0 to 1. State what was verified versus unverified. State the reason for each score."
                 "End with a line 'BEST: <hypothesis name> SCORE: <number>'."
+                "Analyze experimental results using the same methodology and score each hypothesis from 0 to 1. State what was verified versus unverified. "
                 "Form physics equations based on the experimental results"
 
             ),
-            expected_output="Per-hypothesis results and scores, ending with 'BEST: <name> SCORE: <number>', and then form Physics equations based on the experimental results with correct units"
+            expected_output="Per-hypothesis results and scores, ending with 'BEST: <name> SCORE: <number>', analysis of experimental results, and then form Physics equations based on the experimental results with correct units"
             + NO_DATA_RULE,
             agent=analyst,
         )
@@ -163,6 +198,7 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
     def write_report(self):
         result = make_theorist().kickoff(
             f"Discovery aim: {self.state.phenomenon}\n\n"
+            f"Measured data:\n{self.state.data}\n\n"
             f"Hypotheses:\n{self.state.hypotheses}\n\n"
             f"Tests and scores:\n{self.state.test_results}\n\n"
             "Write the report with sections: Best-supported law, Evidence, Limitations, "
@@ -174,6 +210,7 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
     @listen("refine")
     def refine_and_retest(self):
         theorist, analyst = make_theorist(), make_analyst()
+        data = f"Measured data:\n{self.state.data}\n\n"
         tasks = [
             Task(description=(f"Previous hypotheses:\n{self.state.hypotheses}\n\n"
                               f"Previous test results:\n{self.state.test_results}\n\n"
@@ -192,6 +229,12 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
                              "and name the best one with its score and remaining weaknesses.",
                  expected_output="Final scores, ending with 'BEST: <name> SCORE: <number>'." + NO_DATA_RULE,
                  agent=analyst),
+            Task(description= self.state.data +
+                             "Run the final analytical retest against the measured data, score each "
+                             "hypothesis from 0 to 1, and name the best one with its score and "
+                             "remaining weaknesses.",
+                 expected_output="Final scores, ending with 'BEST: <name> SCORE: <number>'." + NO_DATA_RULE,
+                 agent=analyst),
         ]
         crew = Crew(agents=[theorist, analyst], tasks=tasks,
                     process=Process.sequential, verbose=True)
@@ -202,6 +245,7 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
     def write_final_report(self):
         result = make_theorist().kickoff(
             f"Discovery aim: {self.state.phenomenon}\n\n"
+            f"Measured data:\n{self.state.data}\n\n"
             f"Initial hypotheses:\n{self.state.hypotheses}\n\n"
             f"Initial tests and scores:\n{self.state.test_results}\n\n"
             f"Refined hypotheses and retest results:\n{self.state.refined_results}\n\n"
@@ -216,10 +260,14 @@ if __name__ == "__main__":
     try:
         flow = PhysicsLawDiscovery()
         report = flow.kickoff(inputs={
-        "phenomenon": "Find the law related to Hooke's Law and the relationship between force, spring constant, and displacement."
-    })
+            "phenomenon": "Find the relationship between position and force.",
+            "x_value": [1, 2, 3, 4, 5, 6],
+            "y_value": [2.00, 5.66, 10.39, 16.00, 22.36, 29.39]   #Simulation data
+        })
         print(report)
 
     except Exception:
         print(make_theorist().llm.model, make_analyst().llm.model)
         print("LLM calls failed. Check that the LLM server is running and reachable at the specified base_url.")
+
+    
