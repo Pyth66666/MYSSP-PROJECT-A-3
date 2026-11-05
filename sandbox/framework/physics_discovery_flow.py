@@ -218,7 +218,7 @@ class PhysicsLawDiscovery(Flow[DiscoveryState]):
 
     @router(design_and_test)
     def decide_next_step(self):
-        pattern = r"SCORE:\s*(0?\.[89][0-9]*|1(\.0+)?)\s*$"
+        pattern = r"SCORE:\s*(0?\.[89][0-9]*|1(\.0+)?)"
         if re.search(pattern, self.state.test_results):
             return "supported"
         return "refine"
