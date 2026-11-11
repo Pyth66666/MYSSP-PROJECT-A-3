@@ -205,5 +205,65 @@ class LLMProtocolTest(unittest.TestCase):
             srv.server_close()
 
 
+class TeamLawTests(unittest.TestCase):
+    """The team's redesigned laws 2 to 5 (kinetic energy, wave speed, screened
+    Coulomb, saturating Ohm) work in designs S, A and C, and grade fairly."""
+    NEW = {
+        "kinetic_energy": (r"E_k(v) = \frac{2}{v}", "E_k = 0.5 * 2 * v**2"),
+        "wave_speed": (r"v(f) = 15 \ln(0.5 f)", "v = 0.5 * f"),
+        "screened_coulomb": (r"F(r) = \frac{6 e^{-0.4r}}{r^2}", "F = 6 / r**2"),
+        "saturating_ohm": (r"I(V) = 5\tanh\left(\frac{V}{2}\right)", "I = V / 2"),
+    }
+
+    def test_true_law_exact_and_textbook_fails(self):
+        for name, (right, textbook) in self.NEW.items():
+            law = get_law(name)
+            r = grader.grade(right, law)
+            self.assertTrue(r["passed"] and r["exact"], (name, r))
+            self.assertFalse(grader.grade(textbook, law)["passed"], name)
+
+    def test_answer_may_use_x_or_the_law_symbol(self):
+        law = get_law("kinetic_energy")
+        self.assertTrue(grader.grade("y = 2/x", law)["exact"])
+        self.assertTrue(grader.grade("E_k = 2/v", law)["exact"])
+
+    def test_bare_function_call(self):
+        r = grader.grade(r"v = 15\ln f - 10.397", get_law("wave_speed"))
+        self.assertTrue(r["passed"])
+
+    def test_test_points_stay_in_range(self):
+        for name in self.NEW:
+            law = get_law(name)
+            lo, hi = law.x_range
+            self.assertTrue(all(lo < x < hi for x in law.test_points()), name)
+
+    def test_design_S_prompt_has_names_not_formula(self):
+        lab = LabSession("S", 0, "screened_coulomb")
+        prompt = agent.team_prompt(lab.card())
+        self.assertIn("distance (r) in m", prompt)
+        self.assertEqual(len(lab.card()["data"]), 20)
+        for leak in ("exp(", "e^", "-0.4", "alpha", "screened"):
+            self.assertNotIn(leak, prompt)
+
+    def test_design_A_measure_and_range(self):
+        lab = LabSession("A", 0, "saturating_ohm")
+        obs = lab.experiment({"measure": {"x": 2.0}})
+        self.assertAlmostEqual(obs["y"], 5 * __import__("math").tanh(1.0), places=5)
+        with self.assertRaises(ExperimentError):
+            lab.experiment({"measure": {"x": 50}})
+        with self.assertRaises(ExperimentError):
+            lab.experiment({"measure_force": {"x": 1.0}})
+
+    def test_design_B_is_spring_only(self):
+        with self.assertRaises(ExperimentError):
+            LabSession("B", 0, "wave_speed")
+
+    def test_curve_fit_finds_the_power_law_only(self):
+        ans, _ = agent.FitAgent().run(LabSession("A", 0, "kinetic_energy"))
+        self.assertTrue(LabSession("A", 0, "kinetic_energy").submit(ans)["passed"])
+        ans, _ = agent.FitAgent().run(LabSession("A", 0, "wave_speed"))
+        self.assertFalse(LabSession("A", 0, "wave_speed").submit(ans)["passed"])
+
+
 if __name__ == "__main__":
     unittest.main()

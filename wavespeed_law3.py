@@ -1,11 +1,6 @@
 import numpy as np
 import pandas as pd
 
-frequency = 50 #Hz
-wavelengths = np.linspace(0.0, 15.0, 50)
-for w in wavelengths:
-    wavespeed = w * frequency
-
 c = 15.0            
 wavelength = 0.5  
 
@@ -13,7 +8,9 @@ def redesigned_wave_speed(f: float, w: float) -> float:
     #Redesigned Law: v = c * ln(f * w)
     return c * np.log(f * w)
 
-frequencies = np.linspace(1.0, 100.0, 50)
+# Start at 2 Hz: with wavelength 0.5 m, f * w >= 1, so ln(f * w) >= 0 and the speed
+# is never negative (from 1 Hz the speed would start at -10.4 m/s).
+frequencies = np.linspace(2.0, 100.0, 50)
 telemetry_data = []
 
 for f in frequencies:

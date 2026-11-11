@@ -12,6 +12,9 @@ API (JSON)
   GET  /api/results           last bench.py result table
   GET  /api/pipeline          last pipeline.py result table (50 CSV datasets)
   GET  /api/truth?law=        hidden law curve (evaluator view only)
+  GET  /api/leaderboard       every model, latest 10 autonomous runs per design
+  GET  /api/saved_runs        saved autonomous runs that can be replayed
+  GET  /api/saved_run?file=   one saved run log, for replay in 3D
   POST /api/session           {design, seed, law}       -> {sid, card}
   POST /api/experiment        {sid, action}             -> observation
   POST /api/submit            {sid, answer}             -> score + formula curve
@@ -29,6 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 import agent as agents
+import compare
 import grader
 from laws import DEFAULT_LAW, LAWS
 from sandbox_env import (DESIGNS, X_LIMIT, ExperimentError, LabSession, static_dataset,
@@ -50,15 +54,16 @@ def agent_pool(refresh=False):
     return _AGENTS["list"]
 
 
-def formula_curve(answer, n=121):
+def formula_curve(answer, n=121, law=None):
     """Sample the submitted formula so the browser can draw it."""
     try:
-        _, f = grader.compile_formula(answer)
+        _, f = grader.compile_formula(answer, law)
     except Exception:  # noqa: BLE001
         return None
     xs, fs = [], []
     for i in range(n):
-        x = -X_LIMIT + 2 * X_LIMIT * i / (n - 1)
+        lo, hi = (-X_LIMIT, X_LIMIT) if law is None or law.is_spring else law.x_range
+        x = lo + (hi - lo) * i / (n - 1)
         try:
             v = f(x)
         except Exception:  # noqa: BLE001
@@ -124,6 +129,22 @@ class Handler(BaseHTTPRequestHandler):
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             return self._send(200, {k: data[k] for k in ("timestamp", "law", "summary")})
+        if u.path == "/api/leaderboard":
+            return self._send(200, {"rows": compare.leaderboard(os.path.join(HERE, "results"))})
+        if u.path == "/api/saved_runs":
+            return self._send(200, {"runs": compare.saved_runs(os.path.join(HERE, "results"))})
+        if u.path == "/api/saved_run":
+            name = os.path.basename(q.get("file", [""])[0].replace("\\", "/"))
+            path = os.path.join(HERE, "results", "runs", name)
+            if not name.endswith(".json") or not os.path.isfile(path):
+                return self._send(404, {"error": "saved run not found"})
+            with open(path, encoding="utf-8") as f:
+                log = json.load(f)
+            return self._send(200, {k: log.get(k) for k in
+                                    ("agent", "design", "seed", "law", "timestamp", "experiments",
+                                     "answer", "result", "seconds", "tokens")}
+                              | {"curve": formula_curve(log.get("answer") or "",
+                                                        law=LAWS.get(log.get("law")))})
         if u.path == "/api/truth":
             law = q.get("law", [DEFAULT_LAW])[0]
             if law not in LAWS:
@@ -163,7 +184,8 @@ class Handler(BaseHTTPRequestHandler):
                 lab = self._lab(p)
                 answer = str(p.get("answer", ""))
                 result = lab.submit(answer)
-                return self._send(200, {"result": result, "curve": formula_curve(answer)})
+                return self._send(200, {"result": result,
+                                        "curve": formula_curve(answer, law=lab.law)})
 
             if u.path == "/api/run":
                 name = p.get("agent")
@@ -182,7 +204,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {
                     "agent": ag.name, "answer": answer, "notes": notes,
                     "seconds": seconds, "tokens": getattr(ag, "tokens", 0),
-                    "log": lab.log, "result": result, "curve": formula_curve(answer),
+                    "log": lab.log, "result": result,
+                    "curve": formula_curve(answer, law=lab.law),
                 })
         except ExperimentError as exc:
             return self._send(400, {"error": str(exc)})

@@ -90,6 +90,8 @@ def main():
                 raise SystemExit(f"unknown design {d}")
             if d not in ag.designs:
                 continue
+            if d == "B" and not LAWS[args.law].is_spring:
+                continue   # design B needs a moving block: spring laws only
             for seed in range(args.seeds):
                 row = run_one(ag, d, seed, args.law)
                 row["timestamp"] = stamp

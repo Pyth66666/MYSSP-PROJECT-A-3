@@ -31,6 +31,9 @@ FUNCTIONS = {
     "sin": math.sin,
     "cos": math.cos,
     "tan": math.tan,
+    "tanh": math.tanh,
+    "sinh": math.sinh,
+    "cosh": math.cosh,
 }
 CONSTANTS = {"pi": math.pi, "e": math.e}
 KNOWN_NAMES = sorted(list(FUNCTIONS) + list(CONSTANTS) + ["x"], key=len, reverse=True)
@@ -63,7 +66,9 @@ def formula_candidates(text):
     out.extend(reversed(re.findall(r'"answer"\s*:\s*"([^"]+)"', text)))
     blocks = re.findall(r"\$\$(.+?)\$\$|\\\[(.+?)\\\]|\\\((.+?)\\\)|\$(.+?)\$",
                         text, re.DOTALL)
-    out.extend(reversed([next(p for p in b if p) for b in blocks]))
+    pieces = [next(p for p in b if p) for b in blocks]
+    # Only maths that states a law counts; a lone \( x \) in a sentence does not.
+    out.extend(reversed([p for p in pieces if "=" in p]))
     out.extend(reversed([ln for ln in text.splitlines() if "=" in ln]))
     out.append(text)
     seen, result = set(), []
@@ -122,7 +127,7 @@ def latex_to_python(expr):
         s = s.replace(a, b)
     for junk in [r"\left", r"\right", r"\displaystyle", r"\,", r"\;", r"\!", r"\ "]:
         s = s.replace(junk, "")
-    for word in ["sign", "sgn", "abs"]:
+    for word in ["sign", "sgn", "abs", "tanh", "sinh", "cosh"]:
         for wrap in [r"\mathrm", r"\operatorname", r"\text", r"\mathit"]:
             s = s.replace(wrap + "{" + word + "}", word)
     s = s.replace(r"\sgn", "sign")
@@ -133,7 +138,7 @@ def latex_to_python(expr):
     s = _replace_braced_command(s, r"\frac", 2, lambda a: f"(({a[0]})/({a[1]}))")
     s = _replace_braced_command(s, r"\dfrac", 2, lambda a: f"(({a[0]})/({a[1]}))")
     s = _replace_braced_command(s, r"\sqrt", 1, lambda a: f"sqrt({a[0]})")
-    s = re.sub(r"\\(exp|log|ln|sin|cos|tan|pi)", r"\1", s)
+    s = re.sub(r"\\(tanh|sinh|cosh|exp|log|ln|sin|cos|tan|pi)", r"\1", s)
     # |...| -> abs(...), innermost first
     prev = None
     while prev != s:
@@ -179,8 +184,24 @@ def _split_name(word):
     return parts
 
 
+def _wrap_bare_calls(toks):
+    """'ln x' or 'ln 2' -> 'ln ( x )': a function followed by one plain value."""
+    out, i = [], 0
+    while i < len(toks):
+        tok = toks[i]
+        nxt = toks[i + 1] if i + 1 < len(toks) else None
+        if tok in FUNCTIONS and nxt is not None and nxt != "(" and \
+                (nxt[0].isdigit() or nxt[0] == "." or nxt == "x" or nxt in CONSTANTS):
+            out += [tok, "(", nxt, ")"]
+            i += 2
+            continue
+        out.append(tok)
+        i += 1
+    return out
+
+
 def add_implicit_multiplication(s):
-    toks = _tokens(s)
+    toks = _wrap_bare_calls(_tokens(s))
     out = []
     for i, tok in enumerate(toks):
         if out:
@@ -195,17 +216,28 @@ def add_implicit_multiplication(s):
     return "".join(out)
 
 
+# ----------------------------------------------------- the law's own symbol
+def map_symbols(text, law):
+    """Let the agent write the answer with the law's own input symbol, such as
+    E_k = 2/v or I = 5 tanh(V/2): that symbol becomes x before parsing. Letters
+    inside words and LaTeX commands (\\frac, \\right, sqrt) are left alone."""
+    sym = getattr(law, "x_sym", "x") if law is not None else "x"
+    if not sym or sym == "x":
+        return str(text)
+    return re.sub(r"(?<![A-Za-z_\\])" + re.escape(sym) + r"(?![A-Za-z_])", "x", str(text))
+
+
 # ------------------------------------------------------------- safe eval
 ALLOWED_NODES = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Call, ast.Name,
                  ast.Load, ast.Constant, ast.Add, ast.Sub, ast.Mult, ast.Div,
                  ast.Pow, ast.USub, ast.UAdd)
 
 
-def compile_formula(text):
+def compile_formula(text, law=None):
     """Return (python_expression_string, function f(x)) for the first readable
-    candidate formula in the text."""
+    candidate formula in the text. With a law, its input symbol is read as x."""
     errors = []
-    for cand in formula_candidates(text):
+    for cand in formula_candidates(map_symbols(text, law)):
         try:
             return _compile_one(cand)
         except Exception as exc:  # noqa: BLE001 - try the next candidate
@@ -224,7 +256,8 @@ def _compile_one(candidate):
             raise ValueError(f"unknown name '{node.id}'")
         if isinstance(node, ast.Call) and not (isinstance(node.func, ast.Name)
                                                and node.func.id in FUNCTIONS):
-            raise ValueError("only abs, sign, sqrt, exp, log, sin, cos, tan calls allowed")
+            raise ValueError("only abs, sign, sqrt, exp, log, sin, cos, tan, tanh, sinh, "
+                             "cosh calls allowed")
     code = compile(tree, "<formula>", "eval")
     env = {"__builtins__": {}, **FUNCTIONS, **CONSTANTS}
 
@@ -248,7 +281,8 @@ def sympy_exact(parsed_expr, law):
     x = sp.Symbol("x", real=True)
     names = {"x": x, "abs": sp.Abs, "sign": sp.sign, "sgn": sp.sign, "sqrt": sp.sqrt,
              "exp": sp.exp, "log": sp.log, "ln": sp.log, "sin": sp.sin, "cos": sp.cos,
-             "tan": sp.tan, "pi": sp.pi, "e": sp.E, "Abs": sp.Abs, "Rational": sp.Rational}
+             "tan": sp.tan, "tanh": sp.tanh, "sinh": sp.sinh, "cosh": sp.cosh,
+             "pi": sp.pi, "e": sp.E, "Abs": sp.Abs, "Rational": sp.Rational}
     try:
         # parsed_expr already passed the AST whitelist in compile_formula
         ai = sp.nsimplify(sp.sympify(parsed_expr, locals=names), rational=True)
@@ -256,10 +290,13 @@ def sympy_exact(parsed_expr, law):
         diff = sp.simplify(ai - truth)
         if diff == 0:
             return True
-        # split on the sign of x, where Abs and sign become plain powers
+        # split on the sign of x, where Abs and sign become plain powers. A law whose
+        # inputs are all positive (speed, frequency, distance) is only checked there.
         p = sp.Symbol("p", positive=True)
-        both = [sp.simplify(diff.subs(x, p)), sp.simplify(diff.subs(x, -p))]
-        return all(d == 0 for d in both)
+        positive_only = getattr(law, "x_range", (-1, 1))[0] > 0
+        if positive_only:   # logs may be combined when every input is positive
+            return sp.simplify(sp.expand_log(diff.subs(x, p), force=True)) == 0
+        return all(sp.simplify(d) == 0 for d in (diff.subs(x, p), diff.subs(x, -p)))
     except Exception:  # noqa: BLE001
         return None
 
@@ -269,14 +306,15 @@ def grade(answer_text, law, tolerance=0.01):
     result = {"passed": False, "exact": None, "nrmse": None, "parsed": None,
               "reason": "", "truth": law.formula, "tolerance": tolerance}
     try:
-        parsed, f = compile_formula(answer_text)
+        parsed, f = compile_formula(answer_text, law)
     except Exception as exc:  # noqa: BLE001 - any parse problem is a fail
         result["reason"] = f"could not read formula: {exc}"
         return result
     result["parsed"] = parsed
 
     err2, ref2 = 0.0, 0.0
-    for x in TEST_POINTS:
+    points = law.test_points() if hasattr(law, "test_points") else TEST_POINTS
+    for x in points:
         truth = law.force(x)
         try:
             guess = f(x)

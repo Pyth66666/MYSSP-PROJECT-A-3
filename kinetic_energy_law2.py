@@ -12,5 +12,5 @@ for v in velocities:
         {"mass": mass, "velocity": round(v, 4), "kinetic_energy": round(ek, 4)}
     )
 
-f = pd.DataFrame(telemetry_data)
+df = pd.DataFrame(telemetry_data)
 df.to_csv("redesigned_kinetic_energy.csv", index=False)

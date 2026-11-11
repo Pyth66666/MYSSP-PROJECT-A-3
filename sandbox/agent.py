@@ -28,6 +28,7 @@ import json
 import math
 import os
 import time
+import urllib.error
 import urllib.request
 
 import sandbox_env
@@ -53,16 +54,50 @@ Task:
 """
 
 
-def format_table(data):
+# The same prompt for the team's other redesigned laws (kinetic energy, wave
+# speed, electrostatics, Ohm's law): only the system and the variable names change.
+GENERAL_PROMPT = """You are an expert physicist. Below is experimental data collected from an unknown 1D physical system.
+{setup}
+The table contains {x_name} ({x_sym}) in {x_unit} and measured {y_name} ({y_sym}) in {y_unit}.
+
+{data_string}
+
+Task:
+1. Analyze the mathematical relationship between {x_name} ({x_sym}) and {y_name} ({y_sym})
+2. Deduce the exact functional form/formula for {y_sym}({x_sym})
+3. State the derived formula clearly in LaTeX format
+"""
+
+
+def format_table(data, variables=None):
     """Same layout as pandas DataFrame.to_string(index=False) in the team script."""
-    lines = [f"{'position':>9} {'force':>9}"]
+    if variables is None:
+        lines = [f"{'position':>9} {'force':>9}"]
+        for row in data:
+            lines.append(f"{row['x']:>9.4f} {row['F']:>9.4f}")
+        return "\n".join(lines)
+    xh, yh = variables["x_name"].replace(" ", "_"), variables["y_name"].replace(" ", "_")
+    w = max(10, len(xh), len(yh))
+    lines = [f"{xh:>{w}} {yh:>{w}}"]
     for row in data:
-        lines.append(f"{row['x']:>9.4f} {row['F']:>9.4f}")
+        lines.append(f"{row['x']:>{w}.4f} {row['y']:>{w}.4f}")
     return "\n".join(lines)
 
 
 def team_prompt(card):
+    if card.get("system") == "general":
+        v = card["variables"]
+        return GENERAL_PROMPT.format(setup=card["setup"],
+                                     data_string=format_table(card["data"], v), **{
+                                         k: v[k] for k in ("x_name", "x_sym", "x_unit",
+                                                           "y_name", "y_sym", "y_unit")})
     return TEAM_PROMPT.format(data_string=format_table(card["data"]))
+
+
+def _plan_inputs(card, n):
+    """General laws: n inputs spread over the allowed range."""
+    lo, hi = card["variables"]["x_range"]
+    return [round(lo + (hi - lo) * (i + 0.5) / n, 4) for i in range(n)]
 
 
 def collect_xf(lab):
@@ -74,11 +109,17 @@ def collect_xf(lab):
     """
     card = lab.card()
     if "data" in card:
-        return [(r["x"], r["F"]) for r in card["data"]], ["used the given dataset"]
+        key = "y" if card.get("system") == "general" else "F"
+        return [(r["x"], r[key]) for r in card["data"]], ["used the given dataset"]
     tools = [list(t["action"])[0] for t in card["tools"]]
     pairs, notes = [], []
     budget = card["budget"]
-    if "measure_force" in tools:
+    if "measure" in tools:
+        for x in _plan_inputs(card, budget):
+            obs = lab.experiment({"measure": {"x": x}})
+            pairs.append((obs["x"], obs["y"]))
+            notes.append(f"measure x={x:g} -> y={obs['y']:+.4f}")
+    elif "measure_force" in tools:
         for x in _plan_positions(budget):
             obs = lab.experiment({"measure_force": {"x": x}})
             pairs.append((obs["x"], obs["F"]))
@@ -115,6 +156,25 @@ def fit_power_law(pairs):
     return k, p
 
 
+def fit_power_general(pairs):
+    """General laws: y = c * x**p (all inputs positive) or c * |x|**p * sign(x)."""
+    pts = [(x, y) for x, y in pairs if abs(x) > 1e-9 and abs(y) > 1e-12]
+    if len(pts) < 2:
+        raise ValueError("not enough usable data")
+    lx = [math.log(abs(x)) for x, _ in pts]
+    ly = [math.log(abs(y)) for _, y in pts]
+    n = len(pts)
+    mx, my = sum(lx) / n, sum(ly) / n
+    sxx = sum((a - mx) ** 2 for a in lx)
+    p = sum((a - mx) * (b - my) for a, b in zip(lx, ly)) / sxx
+    k = math.exp(my - p * mx)
+    if all(x > 0 for x, _ in pts):
+        c = k if sum(y for _, y in pts) >= 0 else -k
+        return f"y = {c:.4f}*x**{p:.4f}"
+    c = k if sum(x * y for x, y in pts) >= 0 else -k
+    return f"y = {c:.4f}*abs(x)**{p:.4f}*sign(x)"
+
+
 def fit_linear(pairs):
     """Least squares through the origin for F = -k x."""
     sxx = sum(x * x for x, _ in pairs)
@@ -137,6 +197,10 @@ class FitAgent(Agent):
 
     def run(self, lab):
         pairs, notes = collect_xf(lab)
+        if lab.card().get("system") == "general":
+            answer = fit_power_general(pairs)
+            notes.append(f"log-log power fit: {answer}")
+            return answer, notes
         k, p = fit_power_law(pairs)
         notes.append(f"log-log fit: k={k:.4f}, p={p:.4f}")
         return f"F(x) = -{k:.4f}*abs(x)**{p:.4f}*sign(x)", notes
@@ -147,6 +211,10 @@ class HookeAgent(Agent):
 
     def run(self, lab):
         pairs, notes = collect_xf(lab)
+        if lab.card().get("system") == "general":   # the textbook-style linear guess
+            c = -fit_linear(pairs)
+            notes.append(f"assumed y = c*x, fitted c={c:.4f}")
+            return f"y = {c:.4f}*x", notes
         k = fit_linear(pairs)
         notes.append(f"assumed F=-kx, fitted k={k:.4f}")
         return f"F(x) = -{k:.4f}*x", notes
@@ -195,11 +263,87 @@ def _last_json(text):
     return None
 
 
+def _all_json(text):
+    """Every JSON object in the text, in the order written."""
+    dec, out, i = json.JSONDecoder(), [], 0
+    while True:
+        i = text.find("{", i)
+        if i == -1:
+            return out
+        try:
+            obj, end = dec.raw_decode(text, i)
+        except json.JSONDecodeError:
+            i += 1
+            continue
+        if isinstance(obj, dict):
+            out.append(obj)
+        i = end
+
+
+def _pick_action(text):
+    """Return (action, ignored). One action per reply: if a reply holds several,
+    the first experiment is run and the rest are ignored, because anything
+    written after it was written before seeing its result. Several answers and
+    no experiment: the last answer counts (the model revised it)."""
+    acts = [o for o in _all_json(text) if "experiment" in o or "answer" in o]
+    if not acts:
+        return {}, 0
+    if len(acts) == 1:
+        return acts[0], 0
+    exps = [o for o in acts if "experiment" in o]
+    if exps:
+        return exps[0], len(acts) - 1
+    return acts[-1], 0
+
+
+def _normalise_action(msg):
+    """Return (action, corrected). Accepts the flat form small models often write,
+    {"experiment": "measure_force", "x": -2}, as {"measure_force": {"x": -2}}.
+    It has only one possible meaning, so this fixes a typing slip, not physics."""
+    act = msg.get("experiment")
+    if isinstance(act, str):
+        text = act.strip()
+        # The action written as JSON text inside a string.
+        if text.startswith("{"):
+            try:
+                inner = json.loads(text)
+            except json.JSONDecodeError:
+                inner = None
+            if isinstance(inner, dict):
+                return inner, True
+        # The action written as words: "measure_force -1.5" or "release 2".
+        parts = text.replace(":", " ").replace("=", " ").split()
+        if len(parts) >= 2 and parts[0] in ("measure_force", "measure", "release"):
+            try:
+                value = float(parts[-1])
+            except ValueError:
+                value = None
+            if value is not None:
+                key = "x0" if parts[0] == "release" else "x"
+                return {parts[0]: {key: value}}, True
+        args = {k: v for k, v in msg.items() if k != "experiment"}
+        for key in ("args", "arguments", "params", "parameters", "input"):
+            if isinstance(args.get(key), dict):
+                args = args[key]
+                break
+        return {act: args}, True
+    return act, False
+
+
+def _format_hint(lab):
+    tools = getattr(lab, "tools", lab.design["tools"])
+    if "measure" in tools:
+        return '{"experiment": {"measure": {"x": 1.0}}}'
+    if "measure_force" in tools:
+        return '{"experiment": {"measure_force": {"x": 1.0}}}'
+    return '{"experiment": {"release": {"x0": 1.0}}}'
+
+
 class LLMAgent(Agent):
     kind = "llm"
 
     def __init__(self, name, base_url, model, api_key=None, temperature=0.2,
-                 max_tokens=800, timeout=180):
+                 max_tokens=2048, timeout=240, extra_system=""):
         self.name = name
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -208,45 +352,88 @@ class LLMAgent(Agent):
         self.max_tokens = max_tokens
         self.timeout = timeout
         self.tokens = 0
+        # Extra system text: the experiment objective and, in rsi.py, the
+        # strategy notes the agent wrote for itself. Empty = original behaviour.
+        self.extra_system = extra_system
+        self.transcript = []          # full message list of the last run
+        self._token_param = "max_tokens"
+        self._send_temperature = True
 
     def _chat(self, messages):
-        body = json.dumps({"model": self.model, "messages": messages,
-                           "temperature": self.temperature,
-                           "max_tokens": self.max_tokens}).encode("utf-8")
-        req = urllib.request.Request(
-            self.base_url + "/chat/completions", data=body,
-            headers={"Content-Type": "application/json",
-                     "Authorization": f"Bearer {self.api_key}"})
-        with urllib.request.urlopen(req, timeout=self.timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-        usage = data.get("usage") or {}
-        self.tokens += int(usage.get("total_tokens") or 0)
-        return data["choices"][0]["message"]["content"] or ""
+        """One chat call. Adapts once to newer models that reject max_tokens or a
+        custom temperature, and retries rate limits / server errors briefly."""
+        for attempt in range(5):
+            payload = {"model": self.model, "messages": messages,
+                       self._token_param: self.max_tokens}
+            if self._send_temperature:
+                payload["temperature"] = self.temperature
+            req = urllib.request.Request(
+                self.base_url + "/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json",
+                         "Authorization": f"Bearer {self.api_key}"})
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                    data = json.loads(r.read().decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                detail = exc.read().decode("utf-8", "replace")[:400]
+                low = detail.lower()
+                if exc.code == 400 and "max_tokens" in low and self._token_param == "max_tokens":
+                    self._token_param = "max_completion_tokens"
+                    continue
+                if exc.code == 400 and "temperature" in low and self._send_temperature:
+                    self._send_temperature = False
+                    continue
+                if exc.code in (429, 500, 502, 503, 504) and attempt < 4:
+                    time.sleep(3 * (attempt + 1))
+                    continue
+                raise RuntimeError(f"HTTP {exc.code} from {self.model}: {detail}") from None
+            usage = data.get("usage") or {}
+            self.tokens += int(usage.get("total_tokens") or 0)
+            return data["choices"][0]["message"].get("content") or ""
+        raise RuntimeError(f"{self.model}: too many retries")
 
     def run(self, lab):
         self.tokens = 0
+        self.transcript = []
         if lab.design["id"] == "S":
-            reply = self._chat([{"role": "user", "content": team_prompt(lab.card())}])
+            prompt = [{"role": "user", "content": team_prompt(lab.card())}]
+            reply = self._chat(prompt)
+            self.transcript = prompt + [{"role": "assistant", "content": reply}]
             return reply, ["one prompt, one answer (team prompt)", reply[-300:]]
         notes = []
+        system = SYSTEM_PROMPT
+        if lab.card().get("system") == "general":
+            system = system.replace("an unknown force law", "an unknown physical law")
+        system += ("\n\n" + self.extra_system if self.extra_system else "")
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system},
             {"role": "user", "content": "Task card:\n" + json.dumps(lab.card(), indent=1)},
         ]
         for _turn in range(lab.design["budget"] + 4):
             reply = self._chat(messages)
             messages.append({"role": "assistant", "content": reply})
-            msg = _last_json(reply) or {}
+            msg, ignored = _pick_action(reply)
+            if ignored:
+                notes.append(f"one action per reply: {ignored} extra action(s) ignored")
             if "answer" in msg:
                 notes.append("answer given")
+                self.transcript = messages
                 return str(msg["answer"]), notes
             if "experiment" in msg:
+                action, corrected = _normalise_action(msg)
+                if corrected:
+                    notes.append("format corrected: flat action accepted")
                 try:
-                    obs = _compact_observation(lab.experiment(msg["experiment"]))
-                    notes.append(f"experiment {json.dumps(msg['experiment'])}")
+                    obs = _compact_observation(lab.experiment(action))
+                    notes.append(f"experiment {json.dumps(action)}")
                 except sandbox_env.ExperimentError as exc:
-                    obs = {"error": str(exc), "budget_left": lab.budget_left}
+                    obs = {"error": str(exc), "budget_left": lab.budget_left,
+                           "correct_format": _format_hint(lab)}
                     notes.append(f"rejected: {exc}")
+                if ignored:
+                    obs = dict(obs, note="Only one action per reply. The first experiment "
+                                         "was run; everything after it was ignored.")
                 messages.append({"role": "user", "content": "observation: " + json.dumps(obs)})
                 continue
             notes.append("reply had no valid JSON")
@@ -257,6 +444,8 @@ class LLMAgent(Agent):
         messages.append({"role": "user", "content":
                          'No more experiments. Reply now with {"answer": "F(x) = ..."}.'})
         reply = self._chat(messages)
+        messages.append({"role": "assistant", "content": reply})
+        self.transcript = messages
         msg = _last_json(reply) or {}
         return str(msg.get("answer", reply)), notes + ["forced final answer"]
 
@@ -267,7 +456,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 def load_llm_agents(path=None, only_available=True):
     """Read models.json. Skip entries without a key or an unreachable server."""
-    path = path or os.path.join(HERE, "models.json")
+    path = path or os.environ.get("SBX_MODELS") or os.path.join(HERE, "models.json")
     if not os.path.exists(path):
         return []
     with open(path, encoding="utf-8") as f:
@@ -289,7 +478,9 @@ def load_llm_agents(path=None, only_available=True):
         key = os.environ.get(e["api_key_env"]) if e.get("api_key_env") else None
         if e.get("api_key_env") and not key:
             continue
-        agent = LLMAgent(e["name"], e["base_url"], e["model"], api_key=key)
+        agent = LLMAgent(e["name"], e["base_url"], e["model"], api_key=key,
+                         temperature=e.get("temperature", 0.2),
+                         max_tokens=e.get("max_tokens", 2048))
         if only_available and not _reachable(agent):
             continue
         agents.append(agent)
@@ -306,9 +497,11 @@ def _reachable(agent):
             data = json.loads(r.read().decode("utf-8") or "{}")
     except Exception:  # noqa: BLE001 - any failure means "not available now"
         return False
-    ids = [str(m.get("id", "")) for m in data.get("data", []) if isinstance(m, dict)]
+    if "data" not in data:
+        return True   # server does not list models; try it anyway
+    ids = [str(m.get("id", "")) for m in (data.get("data") or []) if isinstance(m, dict)]
     if not ids:
-        return True
+        return False  # server lists no models, e.g. Ollama with nothing pulled
     return any(i == agent.model or i.endswith("/" + agent.model) for i in ids)
 
 

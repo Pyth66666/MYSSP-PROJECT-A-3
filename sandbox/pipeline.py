@@ -49,12 +49,19 @@ def evaluate(ag, law, dataset_id, path):
     rows = load_dataset(path)
     lab = LabSession("S", dataset_id, law, dataset=rows)
     start = time.time()
+    crashed = False
     try:
         answer, _notes = ag.run(lab)
     except Exception as exc:  # noqa: BLE001 - a crashed agent is a failed run
         answer = f"agent error: {exc}"
+        crashed = True
     seconds = round(time.time() - start, 2)
-    result = lab.submit(answer)
+    if crashed:
+        # Do not grade the error text as if it were a formula.
+        result = {"passed": False, "exact": None, "nrmse": None, "parsed": None,
+                  "reason": answer, "truth": None, "experiments_used": len(lab.log)}
+    else:
+        result = lab.submit(answer)
     return answer, result, seconds
 
 

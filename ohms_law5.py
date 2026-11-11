@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 I_max = 5.0   # maximum current ceiling limit (Amperes)
-R = 2.0       # resistance scaling parameter (Volts)
+R = 2.0       # voltage scale of the saturation (Volts)
 
 def redesigned_ohms_law(V: float) -> float:
     return I_max * np.tanh(V / R)

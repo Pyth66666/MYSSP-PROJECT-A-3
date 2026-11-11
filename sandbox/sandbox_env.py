@@ -20,6 +20,11 @@ API (the same for every agent, model, CLI or web page):
 
 The session keeps a log of every experiment, so any run can be replayed and
 checked later.
+
+General laws (laws.py, kind="general": kinetic energy, wave speed, screened
+Coulomb, saturating Ohm) use the same designs with one tool, "measure": set the
+input x and read the output y. Design S gives a fixed table, A measures freely,
+C measures with 3% noise. Design B needs a moving block, so it is spring only.
 """
 
 import math
@@ -130,9 +135,24 @@ def static_x0(seed):
     return round(mag if i % 2 else -mag, 4)
 
 
+GENERAL_ROWS = 50      # rows per general-law dataset, like the team scripts
+
+
 def static_dataset(law, seed):
-    """One simulated run, exactly like the team script (physics law redesign.py):
-    semi-implicit Euler, v = v + a*dt then x = x + v*dt, starting at rest."""
+    """One dataset for design S.
+
+    Spring laws: one simulated run, exactly like the team script (physics law
+    redesign.py): semi-implicit Euler, v = v + a*dt then x = x + v*dt, at rest.
+    General laws: 50 inputs across the law's range. Dataset 0 is evenly spaced,
+    like the team scripts (np.linspace); other datasets use seeded random inputs."""
+    if not law.is_spring:
+        lo, hi = law.x_range
+        if seed == 0:
+            xs = [lo + (hi - lo) * i / (GENERAL_ROWS - 1) for i in range(GENERAL_ROWS)]
+        else:
+            rng = random.Random(f"{law.name}:{seed}")
+            xs = sorted(rng.uniform(lo, hi) for _ in range(GENERAL_ROWS))
+        return [{law.x_col: round(x, 4), law.y_col: round(law.force(x), 4)} for x in xs]
     x, v = static_x0(seed), 0.0
     rows = []
     for step in range(int(round(STATIC_TIME / STATIC_DT))):
@@ -187,6 +207,13 @@ class LabSession:
         self.design = DESIGNS[design]
         self.seed = int(seed)
         self.law = get_law(law)
+        if self.law.is_spring:
+            self.tools = list(self.design["tools"])
+        elif self.design["id"] == "B":
+            raise ExperimentError(f"design B needs a moving block, so it only works with spring "
+                                  f"laws, not '{self.law.name}'. Use design S, A or C.")
+        else:
+            self.tools = ["measure"] if self.design["tools"] else []
         self.log = []          # [{"action": ..., "observation": ...}]
         self.answer = None
         self.result = None
@@ -198,6 +225,8 @@ class LabSession:
 
     def card(self):
         """Everything an agent is allowed to know before experimenting."""
+        if not self.law.is_spring:
+            return self._general_card()
         d = self.design
         tools = []
         if "measure_force" in d["tools"]:
@@ -253,11 +282,13 @@ class LabSession:
             raise ExperimentError("action must be one JSON object like "
                                   '{"measure_force": {"x": 1.0}}')
         kind, args = next(iter(action.items()))
-        if kind not in self.design["tools"]:
+        if kind not in self.tools:
             raise ExperimentError(f"'{kind}' is not available in design "
-                                  f"{self.design['id']}, tools: {self.design['tools']}")
+                                  f"{self.design['id']}, tools: {self.tools}")
         rng = random.Random(f"{self.seed}:{len(self.log)}")
-        if kind == "measure_force":
+        if kind == "measure":
+            obs = self._measure(args, rng)
+        elif kind == "measure_force":
             obs = self._measure_force(args, rng)
         else:
             obs = self._release(args, rng)
@@ -283,6 +314,59 @@ class LabSession:
         if not math.isfinite(x) or abs(x) > X_LIMIT:
             raise ExperimentError(f"{key} must be between -{X_LIMIT} and {X_LIMIT}")
         return x
+
+    def _general_card(self):
+        L, d = self.law, self.design
+        lo, hi = L.x_range
+        variables = {"x": f"{L.x_name} {L.x_sym} in {L.x_unit}",
+                     "y": f"{L.y_name} {L.y_sym} in {L.y_unit}",
+                     "x_name": L.x_name, "x_sym": L.x_sym, "x_unit": L.x_unit,
+                     "y_name": L.y_name, "y_sym": L.y_sym, "y_unit": L.y_unit,
+                     "x_range": [lo, hi]}
+        card = {
+            "design": d["id"],
+            "title": d["title"],
+            "system": "general",
+            "setup": L.setup,
+            "variables": variables,
+            "goal": f"Find the exact formula for the {L.y_name} {L.y_sym} as a function of "
+                    f"the {L.x_name} {L.x_sym}.",
+            "submit": f"One expression for {L.y_sym} in terms of {L.x_sym}, for example "
+                      f"'{L.y_sym} = 3*{L.x_sym}**2', in Python or LaTeX. You may write x "
+                      f"instead of {L.x_sym}. abs(), sign(), sqrt(), exp(), log() (natural), "
+                      f"sin(), cos(), tanh() are allowed.",
+        }
+        if d["id"] == "S":
+            rows = self.dataset if self.dataset is not None else static_dataset(L, self.seed)
+            card.update(tools=[], budget=0, budget_left=0,
+                        data=[{"x": float(r[L.x_col]), "y": float(r[L.y_col])}
+                              for r in sample_rows(rows)],
+                        pass_rule=f"exact SymPy match, or normalised RMSE <= "
+                                  f"{d['tolerance']:.0%} on unseen inputs")
+            return card
+        card.update(
+            tools=[{"action": {"measure": {"x": f"<number between {lo} and {hi}>"}},
+                    "returns": f"y, the {L.y_name} in {L.y_unit}, with the {L.x_name} set to x "
+                               f"({L.x_unit})"}],
+            budget=d["budget"], budget_left=self.budget_left,
+            noise={"y_relative": d["force_noise"]},
+            pass_rule=f"normalised RMSE against the hidden law <= {d['tolerance']:.0%} on "
+                      f"unseen inputs across the whole range")
+        return card
+
+    def _measure(self, args, rng):
+        """General laws: set the input x, read the output y (3% noise in design C)."""
+        lo, hi = self.law.x_range
+        try:
+            x = float(args["x"])
+        except (KeyError, TypeError, ValueError):
+            raise ExperimentError("missing number 'x'")
+        if not math.isfinite(x) or x < lo or x > hi:
+            raise ExperimentError(f"x must be between {lo} and {hi} ({self.law.x_unit})")
+        y = self.law.force(x)
+        if self.design["force_noise"]:
+            y += rng.gauss(0.0, self.design["force_noise"] * abs(y) + 1e-4)
+        return {"x": round(x, 6), "y": round(y, 6)}
 
     def _measure_force(self, args, rng):
         x = self._position(args, "x")
@@ -325,5 +409,6 @@ class LabSession:
 def truth_curve(law_name=None, n=121):
     """Evaluator-only: the hidden F(x) curve, for the 'reveal' view after grading."""
     law = get_law(law_name)
-    xs = [-X_LIMIT + 2 * X_LIMIT * i / (n - 1) for i in range(n)]
+    lo, hi = law.x_range if not law.is_spring else (-X_LIMIT, X_LIMIT)
+    xs = [lo + (hi - lo) * i / (n - 1) for i in range(n)]
     return {"formula": law.formula, "x": xs, "F": [law.force(x) for x in xs]}

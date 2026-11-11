@@ -6,68 +6,112 @@
 <title>Physics Discovery Sandbox</title>
 <style>
   :root {
-    --bg: #f4f4f2; --panel: #ffffff; --ink: #1c1c1e; --muted: #6a6a6e; --line: #dedede;
-    --accent: #2f5fd0; --truth: #c2410c; --force: #d33b32; --pass: #1f7a3d; --fail: #b42318;
+    --bg: #05080e; --panel: rgba(11, 19, 31, .86); --panel-solid: #0b131f; --ink: #e4eefa;
+    --muted: #7f93a8; --line: rgba(110, 190, 255, .16); --line-strong: rgba(62, 224, 255, .45);
+    --accent: #3ee0ff; --accent-ink: #031018; --truth: #ff8a3d; --force: #ff7a45;
+    --pass: #3ddc97; --fail: #ff6b6b; --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-         background: var(--bg); color: var(--ink); }
-  header { padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
-  header h1 { margin: 0; font-size: 17px; font-weight: 650; }
-  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+         background:
+           radial-gradient(1200px 600px at 70% -10%, rgba(62, 224, 255, .07), transparent 60%),
+           linear-gradient(rgba(110, 190, 255, .035) 1px, transparent 1px) 0 0 / 40px 40px,
+           linear-gradient(90deg, rgba(110, 190, 255, .035) 1px, transparent 1px) 0 0 / 40px 40px,
+           var(--bg);
+         min-height: 100vh; }
+  header { padding: 16px 20px 14px; border-bottom: 1px solid var(--line);
+           background: linear-gradient(180deg, rgba(11, 19, 31, .95), rgba(11, 19, 31, .7)); }
+  .eyebrow { font: 600 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+             color: var(--accent); display: flex; align-items: center; gap: 8px; }
+  .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+                     box-shadow: 0 0 10px var(--accent); }
+  header h1 { margin: 8px 0 0; font-size: 20px; font-weight: 650; letter-spacing: .01em; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 900px; }
   main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 16px 20px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
-  .stage { position: relative; height: 430px; padding: 0; overflow: hidden; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .03); }
+  .stage { position: relative; height: 450px; padding: 0; overflow: hidden; border-color: var(--line-strong); }
+  .stage::before, .stage::after { content: ""; position: absolute; width: 22px; height: 22px; pointer-events: none;
+                                  border: 2px solid var(--accent); opacity: .8; z-index: 2; }
+  .stage::before { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
+  .stage::after { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
   #view { width: 100%; height: 100%; display: block; }
-  #hud { position: absolute; left: 12px; top: 10px; font: 13px/1.5 ui-monospace, Consolas, monospace;
-         background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; }
-  #status { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: var(--muted);
-            background: rgba(255,255,255,.85); border-radius: 6px; padding: 4px 8px; }
+  #hud { position: absolute; left: 12px; top: 10px; font: 13px/1.5 var(--mono); color: var(--accent);
+         background: rgba(5, 10, 18, .78); border: 1px solid var(--line-strong); border-radius: 6px; padding: 6px 10px;
+         text-shadow: 0 0 8px rgba(62, 224, 255, .5); white-space: pre; }
+  #status { position: absolute; right: 14px; bottom: 12px; font: 11.5px var(--mono); color: var(--muted);
+            background: rgba(5, 10, 18, .78); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px;
+            letter-spacing: .04em; }
   .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
   .charts canvas { width: 100%; height: 230px; display: block; }
-  h2 { font-size: 13px; margin: 0 0 8px; font-weight: 650; }
-  h3 { font-size: 12px; margin: 14px 0 6px; color: var(--muted); font-weight: 600;
-       text-transform: uppercase; letter-spacing: .04em; }
+  h2 { font: 600 12px/1.4 var(--mono); margin: 0 0 10px; letter-spacing: .08em; text-transform: uppercase;
+       color: var(--ink); }
+  h3 { font: 600 11px/1.4 var(--mono); margin: 16px 0 6px; color: var(--accent); letter-spacing: .12em;
+       text-transform: uppercase; opacity: .85; }
   .tabs { display: flex; gap: 6px; }
-  .tabs button { flex: 1; padding: 8px 4px; border: 1px solid var(--line); background: var(--panel);
-                 border-radius: 8px; cursor: pointer; font: inherit; color: var(--ink); }
-  .tabs button.on { border-color: var(--ink); font-weight: 650; }
-  .summary { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
-  ul.pl { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; }
+  .tabs button { flex: 1; padding: 8px 4px; border: 1px solid var(--line); background: rgba(5, 10, 18, .6);
+                 border-radius: 8px; cursor: pointer; font: 600 12px/1.25 system-ui, sans-serif; color: var(--muted);
+                 transition: border-color .15s, color .15s, box-shadow .15s; }
+  .tabs button:hover { color: var(--ink); border-color: var(--line-strong); }
+  .tabs button.on { border-color: var(--accent); color: var(--accent);
+                    box-shadow: 0 0 0 1px rgba(62, 224, 255, .25), 0 0 16px rgba(62, 224, 255, .18); }
+  .summary { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+  ul.pl { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: #b7c7d8; }
   ul.pl li { margin: 2px 0; }
+  ul.pl li::marker { color: var(--accent); }
   .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-  .row label { font-size: 13px; min-width: 64px; }
-  .row input[type=range] { flex: 1; }
-  .row output { width: 52px; text-align: right; font: 13px ui-monospace, Consolas, monospace; }
-  button.act { padding: 8px 10px; border: 0; border-radius: 8px; background: var(--ink);
-               color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-  button.act.sec { background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
-  button.act:disabled { opacity: .4; cursor: default; }
-  input[type=text], select, input[type=number] { font: inherit; padding: 7px 8px; border: 1px solid var(--line);
-               border-radius: 8px; background: #fff; color: var(--ink); min-width: 0; }
-  input[type=text] { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .row label { font-size: 13px; min-width: 64px; color: #b7c7d8; }
+  .row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .row output { width: 52px; text-align: right; font: 13px var(--mono); color: var(--accent); }
+  button.act { white-space: nowrap; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent);
+               color: var(--accent-ink); font: 650 13px system-ui, sans-serif; cursor: pointer;
+               box-shadow: 0 0 14px rgba(62, 224, 255, .25); transition: box-shadow .15s, transform .05s; }
+  button.act:hover { box-shadow: 0 0 22px rgba(62, 224, 255, .45); }
+  button.act:active { transform: translateY(1px); }
+  button.act.sec { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); box-shadow: none; }
+  button.act.sec:hover { border-color: var(--accent); color: var(--accent); }
+  button.act:disabled { opacity: .35; cursor: default; box-shadow: none; }
+  input[type=text], select, input[type=number] { font: inherit; padding: 7px 9px; border: 1px solid var(--line);
+               border-radius: 8px; background: #070d16; color: var(--ink); min-width: 0; }
+  input[type=text]:focus, select:focus, input[type=number]:focus { outline: none; border-color: var(--accent);
+               box-shadow: 0 0 0 3px rgba(62, 224, 255, .15); }
+  input[type=text] { flex: 1; font-family: var(--mono); font-size: 13px; }
+  input::placeholder { color: #4d6176; }
   select { flex: 1; }
-  .budget { font-size: 13px; color: var(--muted); }
-  .budget b { color: var(--ink); }
-  .verdict { margin-top: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13px;
-             background: var(--bg); display: none; }
-  .verdict.pass { display: block; border-left: 3px solid var(--pass); }
-  .verdict.fail { display: block; border-left: 3px solid var(--fail); }
-  .verdict code { font-size: 12px; }
-  .toggle { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 12px;
-            padding-top: 12px; border-top: 1px solid var(--line); }
-  .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .budget { font: 12.5px var(--mono); color: var(--muted); white-space: nowrap; }
+  .budget b { color: var(--accent); }
+  .verdict { margin-top: 10px; padding: 9px 11px; border-radius: 8px; font-size: 13px;
+             background: #070d16; border: 1px solid var(--line); display: none; }
+  .verdict.pass { display: block; border-left: 3px solid var(--pass); box-shadow: -6px 0 18px -10px var(--pass); }
+  .verdict.fail { display: block; border-left: 3px solid var(--fail); box-shadow: -6px 0 18px -10px var(--fail); }
+  .verdict code { font: 12px var(--mono); color: var(--accent); }
+  .toggle { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-top: 14px;
+            padding-top: 12px; border-top: 1px solid var(--line); color: #b7c7d8; }
+  .toggle input { accent-color: var(--truth); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: system-ui, sans-serif;
+          text-transform: none; letter-spacing: 0; font-weight: 400; }
+  code { font-family: var(--mono); color: var(--accent); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; }
-  td.num { font-family: ui-monospace, Consolas, monospace; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  td.num { font-family: var(--mono); color: #cfe3f5; }
+  tbody tr:hover td { background: rgba(62, 224, 255, .04); }
   .results { grid-column: 1 / -1; }
+  .lb { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  .lb h4 { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
+           margin: 0 0 6px; }
+  td.ok { color: var(--pass); } td.mid { color: #ffd166; } td.bad { color: var(--fail); }
+  @media (max-width: 1100px) { .lb { grid-template-columns: 1fr; } }
   details { margin-top: 10px; font-size: 13px; }
   summary { cursor: pointer; color: var(--muted); }
-  pre#promptText { white-space: pre-wrap; font: 11.5px/1.45 ui-monospace, Consolas, monospace;
-                   background: var(--bg); border-radius: 8px; padding: 8px; max-height: 220px; overflow: auto; }
-  #log { font: 12px/1.5 ui-monospace, Consolas, monospace; color: var(--muted); max-height: 120px;
-         overflow: auto; margin-top: 8px; white-space: pre-wrap; }
+  summary:hover { color: var(--accent); }
+  pre#promptText { white-space: pre-wrap; font: 11.5px/1.45 var(--mono); color: #b7c7d8; background: #070d16;
+                   border: 1px solid var(--line); border-radius: 8px; padding: 8px; max-height: 220px; overflow: auto; }
+  #log { font: 12px/1.5 var(--mono); color: var(--muted); max-height: 120px; overflow: auto; margin-top: 8px;
+         white-space: pre-wrap; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: rgba(110, 190, 255, .2); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; padding: 12px; }
     .charts { grid-template-columns: 1fr; }
@@ -80,6 +124,7 @@
 </head>
 <body>
 <header>
+  <div class="eyebrow">MYSSP A-3 &middot; Physics discovery lab</div>
   <h1>Physics Discovery Sandbox</h1>
   <p>A block on a spring with a hidden force law. The agent gets data (design S) or runs experiments (A&ndash;C), proposes F(x), and the SymPy evaluator scores it against the hidden law.</p>
 </header>
@@ -143,11 +188,20 @@
     </div>
     <div id="log"></div>
 
+    <h3>Replay a saved run</h3>
+    <div class="row">
+      <select id="replaySel" aria-label="Saved run"><option value="">No saved runs yet</option></select>
+      <button class="act sec" id="replayBtn">Replay</button>
+    </div>
+    <p class="note">Real runs from <code>experiment.py</code>, replayed from their logs: the same measurements, answer and grade. No new API call.</p>
+
     <label class="toggle"><input type="checkbox" id="reveal"> Evaluator view: show the hidden law</label>
     <p class="note">Agents never see this. It is for explaining the result to people.</p>
   </aside>
 
   <div class="card results">
+    <h2>Autonomous experiments: every model <span class="note" id="lbMeta"></span></h2>
+    <div id="lbTable"><p class="note">No autonomous runs yet. Run <code>py experiment.py</code> in the lab folder, then reload.</p></div>
     <h2>Pipeline results: 50 CSV datasets <span class="note" id="pipeMeta"></span></h2>
     <div id="pipeTable"><p class="note">No results yet. Run <code>python pipeline.py</code> in the lab folder, then reload.</p></div>
     <h2 style="margin-top:18px">Sandbox design comparison <span class="note" id="resMeta"></span></h2>
@@ -182,7 +236,8 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf4f4f2);
+scene.background = new THREE.Color(0x05080e);
+scene.fog = new THREE.Fog(0x05080e, 10, 24);
 const camera = new THREE.PerspectiveCamera(40, 2, 0.1, 100);
 camera.position.set(0.4, 2.5, 6.3);
 const controls = new OrbitControls(camera, canvas);
@@ -190,8 +245,10 @@ controls.target.set(-0.6, -0.1, 0);
 controls.enableDamping = true;
 controls.maxPolarAngle = Math.PI * 0.49;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0xcfcfcf, 1.6));
-const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+scene.add(new THREE.HemisphereLight(0xa8dcff, 0x05080e, 0.9));
+const rim = new THREE.DirectionalLight(0x3ee0ff, 0.4);
+rim.position.set(2, 4, -6); scene.add(rim);
+const sun = new THREE.DirectionalLight(0xffffff, 1.35);
 sun.position.set(3, 7, 5);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -199,22 +256,32 @@ Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 4, bottom: -4 });
 scene.add(sun);
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.75, ...extra });
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), mat(0xebebe8));
+function glowEdges(mesh, color = 0x3ee0ff, opacity = 0.7) {
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),
+    new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+  mesh.add(e); return e;
+}
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), mat(0x060b13, { roughness: 0.95 }));
 floor.rotation.x = -Math.PI / 2; floor.position.y = -0.62; floor.receiveShadow = true;
 scene.add(floor);
-const grid = new THREE.GridHelper(30, 30, 0xd6d6d2, 0xe0e0dc);
+const grid = new THREE.GridHelper(30, 60, 0x2a8fb0, 0x123447);
+grid.material.transparent = true; grid.material.opacity = 0.55;
 grid.position.y = -0.61; scene.add(grid);
 
 const WALL_X = -4.2, BLOCK = 0.6;
-const table = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.3, 1.4), mat(0xd9d9d4));
+const table = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.3, 1.4), mat(0x0e1724, { metalness: 0.6, roughness: 0.35 }));
 table.position.set(-0.2, -0.47, 0); table.receiveShadow = true; table.castShadow = true;
-scene.add(table);
-const rail = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.04, 0.12), mat(0x9a9a96, { metalness: 0.4 }));
+scene.add(table); glowEdges(table, 0x3ee0ff, 0.45);
+const rail = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.04, 0.12), mat(0x9fb4c8, { metalness: 0.9, roughness: 0.22, emissive: 0x0b3a4a, emissiveIntensity: 0.6 }));
 rail.position.set(-0.15, -0.3, 0); scene.add(rail);
-const wall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.6, 1.4), mat(0x8c8c88));
+const wall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.6, 1.4), mat(0x111b29, { metalness: 0.5, roughness: 0.45 }));
 wall.position.set(WALL_X - 0.125, 0.18, 0); wall.castShadow = true; scene.add(wall);
+glowEdges(wall, 0x3ee0ff, 0.55);
+const strip = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.2, 0.06),
+  new THREE.MeshBasicMaterial({ color: 0x3ee0ff }));
+strip.position.set(WALL_X + 0.006, 0.18, 0); scene.add(strip);
 
-function textSprite(text, size = 0.32, color = "#6a6a6e") {
+function textSprite(text, size = 0.32, color = "#8aa0b4") {
   const c = document.createElement("canvas"); c.width = 256; c.height = 64;
   const g = c.getContext("2d");
   g.font = "500 34px system-ui, sans-serif"; g.fillStyle = color;
@@ -225,18 +292,19 @@ function textSprite(text, size = 0.32, color = "#6a6a6e") {
 }
 for (let m = -3; m <= 3; m++) {
   const tick = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, m === 0 ? 1.0 : 0.5),
-                              mat(m === 0 ? 0x1c1c1e : 0x8a8a86));
+                              m === 0 ? new THREE.MeshBasicMaterial({ color: 0x3ee0ff }) : mat(0x3a5068));
   tick.position.set(m, -0.31, 0); scene.add(tick);
-  const label = textSprite(m === 0 ? "x = 0" : `${m} m`, 0.26, "#4a4a4e");
+  const label = textSprite(m === 0 ? "x = 0" : `${m} m`, 0.26, m === 0 ? "#3ee0ff" : "#8aa0b4");
   label.position.set(m, -0.2, 0.9); scene.add(label);
 }
 
-const block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK, BLOCK, BLOCK), mat(0x3d4f7a));
-block.castShadow = true; scene.add(block);
+const block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK, BLOCK, BLOCK),
+  mat(0x0f2a44, { metalness: 0.35, roughness: 0.3, emissive: 0x0a3a58, emissiveIntensity: 0.7 }));
+block.castShadow = true; scene.add(block); glowEdges(block, 0x7ff0ff, 0.95);
 const massLabel = textSprite("1 kg", 0.26, "#ffffff");
 massLabel.position.set(0, 0, BLOCK / 2 + 0.01); block.add(massLabel);
 
-const springMat = mat(0x707070, { metalness: 0.6, roughness: 0.35 });
+const springMat = mat(0xd6ecff, { metalness: 0.9, roughness: 0.2, emissive: 0x1b6a86, emissiveIntensity: 0.55 });
 let spring = null;
 function updateSpring(x) {
   const start = WALL_X, end = x - BLOCK / 2, coils = 14, r = 0.17, seg = 240;
@@ -253,9 +321,10 @@ function updateSpring(x) {
   else { spring = new THREE.Mesh(geo, springMat); spring.castShadow = true; scene.add(spring); }
 }
 
-const arrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 1, 0xd33b32, 0.22, 0.14);
+const arrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 1, 0xff7a45, 0.22, 0.14);
 arrow.visible = false; scene.add(arrow);
-const probe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.3, 12), mat(0x1c1c1e));
+const probe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.3, 12),
+  mat(0xe4eefa, { emissive: 0x3ee0ff, emissiveIntensity: 0.5 }));
 probe.visible = false; scene.add(probe);
 
 function setBlock(x, force = null, holding = false) {
@@ -336,7 +405,7 @@ function axes(g, W, H, xr, yr, xl, yl) {
   const X = (v) => P.l + ((v - xr[0]) / (xr[1] - xr[0])) * (W - P.l - P.r);
   const Y = (v) => H - P.b - ((v - yr[0]) / (yr[1] - yr[0])) * (H - P.t - P.b);
   g.clearRect(0, 0, W, H);
-  g.font = "11px system-ui, sans-serif"; g.fillStyle = "#6a6a6e"; g.strokeStyle = "#e6e6e3";
+  g.font = "11px ui-monospace, Consolas, monospace"; g.fillStyle = "#7f93a8"; g.strokeStyle = "rgba(110,190,255,0.09)";
   g.lineWidth = 1;
   const ticks = (a, b, n) => { const s = (b - a) / n; return Array.from({ length: n + 1 }, (_, i) => a + i * s); };
   for (const v of ticks(xr[0], xr[1], 6)) {
@@ -347,7 +416,7 @@ function axes(g, W, H, xr, yr, xl, yl) {
     g.beginPath(); g.moveTo(P.l, Y(v)); g.lineTo(W - P.r, Y(v)); g.stroke();
     g.textAlign = "right"; g.fillText(+v.toFixed(1), P.l - 6, Y(v) + 4);
   }
-  g.strokeStyle = "#9a9a96";
+  g.strokeStyle = "#35506a";
   if (yr[0] < 0 && yr[1] > 0) { g.beginPath(); g.moveTo(P.l, Y(0)); g.lineTo(W - P.r, Y(0)); g.stroke(); }
   if (xr[0] < 0 && xr[1] > 0) { g.beginPath(); g.moveTo(X(0), P.t); g.lineTo(X(0), H - P.b); g.stroke(); }
   g.textAlign = "right"; g.fillText(xl, W - P.r, H - 3);
@@ -370,7 +439,7 @@ function legend(g, W, items) {
   let x = W - 10;
   g.font = "11px system-ui, sans-serif"; g.textAlign = "right";
   for (const [label, color] of items.reverse()) {
-    g.fillStyle = "#1c1c1e"; g.fillText(label, x, 20);
+    g.fillStyle = "#cfe3f5"; g.fillText(label, x, 20);
     x -= g.measureText(label).width + 6;
     g.fillStyle = color; g.fillRect(x - 12, 15, 12, 3);
     x -= 24;
@@ -385,15 +454,15 @@ function drawForceChart() {
   const m = Math.max(5, ...ys.map(Math.abs)) * 1.1;
   const [X, Y] = axes(g, W, H, [-3, 3], [-m, m], "x (m)", "F (N)");
   const items = [];
-  if (S.curve) { line(g, X, Y, S.curve.x, S.curve.F, "#2f5fd0", [], 2.5); items.push(["submitted F(x)", "#2f5fd0"]); }
+  if (S.curve) { line(g, X, Y, S.curve.x, S.curve.F, "#3ee0ff", [], 2.5); items.push(["submitted F(x)", "#3ee0ff"]); }
   if ($("reveal").checked && S.truth) {
-    line(g, X, Y, S.truth.x, S.truth.F, "#c2410c", [6, 5]); items.push(["hidden law", "#c2410c"]);
+    line(g, X, Y, S.truth.x, S.truth.F, "#ff8a3d", [6, 5]); items.push(["hidden law", "#ff8a3d"]);
   }
-  g.fillStyle = "#1c1c1e";
+  g.fillStyle = "#e4eefa";
   for (const p of S.points) { g.beginPath(); g.arc(X(p.x), Y(p.F), 3.5, 0, 7); g.fill(); }
-  if (S.points.length) items.push([S.design && S.design.id === "S" ? "data sent to agent" : "measured", "#1c1c1e"]);
+  if (S.points.length) items.push([S.design && S.design.id === "S" ? "data sent to agent" : "measured", "#e4eefa"]);
   if (!S.points.length && !S.curve && !(S.truth && $("reveal").checked)) {
-    g.fillStyle = "#6a6a6e"; g.textAlign = "center";
+    g.fillStyle = "#7f93a8"; g.textAlign = "center";
     g.fillText(S.design && S.design.id === "B"
       ? "No force sensor in this design. Infer F from the motion." : "Measure the force to add points.", W / 2, H / 2 - 14);
   }
@@ -407,10 +476,10 @@ function drawTimeChart(cursor = null) {
   S.releases.forEach((r, i) => {
     const last = i === S.releases.length - 1;
     const xs = cursor !== null && last ? r.t.filter((t) => t <= cursor) : r.t;
-    line(g, X, Y, xs, r.x.slice(0, xs.length), last ? "#1c1c1e" : "#c4c4c0", [], last ? 2 : 1.4);
+    line(g, X, Y, xs, r.x.slice(0, xs.length), last ? "#3ee0ff" : "#2b4258", [], last ? 2 : 1.4);
   });
   if (!S.releases.length) {
-    g.fillStyle = "#6a6a6e"; g.textAlign = "center";
+    g.fillStyle = "#7f93a8"; g.textAlign = "center";
     g.fillText(S.design && !S.design.tools.includes("release") && S.design.id !== "S"
       ? "No release tool in this design." : "Release the block to record its motion.", W / 2, H / 2 - 14);
   }
@@ -423,7 +492,7 @@ window.addEventListener("resize", redraw);
 function setStatus(t) { $("status").textContent = t; }
 function setBusy(b) {
   S.busy = b;
-  for (const id of ["probeBtn", "releaseBtn", "submitBtn", "runBtn", "newBtn", "playBtn"]) $(id).disabled = b;
+  for (const id of ["probeBtn", "releaseBtn", "submitBtn", "runBtn", "newBtn", "playBtn", "replayBtn"]) $(id).disabled = b;
   if (!b) updateBudget();
 }
 function updateBudget() {
@@ -445,7 +514,7 @@ function selectDesign(id) {
   $("staticTool").style.display = d.id === "S" ? "" : "none";
   $("seedLabel").textContent = d.id === "S" ? "Dataset" : "Seed";
   $("seed").max = d.id === "S" ? 49 : 9999;
-  newSession();
+  return newSession();
 }
 
 async function newSession() {
@@ -591,6 +660,66 @@ async function loadResults() {
     `</tbody></table><p class="note">Pass rate over seeds; err = median normalised RMSE against the hidden law on unseen positions.</p>`;
 }
 
+// ------------------------------------------------- saved runs and leaderboard
+const short = (name) => name.replace("RapidScreen ", "");
+
+async function loadLeaderboard() {
+  const r = await api("/api/leaderboard");
+  if (!r.rows || !r.rows.length) return;
+  const designs = [...new Set(r.rows.map((x) => x.design))].sort();
+  const cls = (p, n) => (p === n ? "ok" : p === 0 ? "bad" : "mid");
+  $("lbMeta").textContent = "(latest 10 runs per model, law: power_spring, from experiment.py)";
+  $("lbTable").innerHTML = `<div class="lb">` + designs.map((d) => {
+    const title = S.designs.find((x) => x.id === d)?.title || "";
+    const rows = r.rows.filter((x) => x.design === d);
+    return `<div><h4>Design ${d}: ${title}</h4><table><thead><tr><th>Model</th><th>Pass</th><th>Exact</th>` +
+      `<th>Median err</th><th>Avg exp</th><th>Tokens</th></tr></thead><tbody>` +
+      rows.map((x) => `<tr><td>${short(x.agent)}</td>` +
+        `<td class="num ${cls(x.passes, x.runs)}">${x.passes}/${x.runs}</td>` +
+        `<td class="num">${x.exacts}/${x.runs}</td>` +
+        `<td class="num">${x.median_error === null ? "-" : (x.median_error * 100).toFixed(2) + "%"}</td>` +
+        `<td class="num">${x.avg_experiments.toFixed(1)}</td><td class="num">${x.tokens.toLocaleString()}</td></tr>`).join("") +
+      `</tbody></table></div>`;
+  }).join("") + `</div>`;
+}
+
+async function loadSavedRuns() {
+  const r = await api("/api/saved_runs");
+  if (!r.runs || !r.runs.length) return;
+  const groups = {};
+  for (const x of r.runs) (groups[x.design] ||= []).push(x);
+  $("replaySel").innerHTML = Object.keys(groups).sort().map((d) =>
+    `<optgroup label="Design ${d}">` + groups[d].map((x) =>
+      `<option value="${x.file}">${short(x.agent)} · seed ${x.seed} · ${x.passed ? "PASS" : "FAIL"}</option>`).join("") +
+    `</optgroup>`).join("");
+  const pick = r.runs.find((x) => x.design === "C" && x.agent.endsWith("gpt-6-sol") && x.seed === 0);
+  if (pick) $("replaySel").value = pick.file;
+}
+
+$("replayBtn").onclick = async () => {
+  const file = $("replaySel").value;
+  if (!file) return;
+  setBusy(true);
+  try {
+    const run = await api(`/api/saved_run?file=${encodeURIComponent(file)}`);
+    if (!S.design || S.design.id !== run.design) await selectDesign(run.design);
+    S.points = []; S.releases = []; S.curve = null; $("verdict").className = "verdict";
+    redraw();
+    $("log").textContent = `replay: ${short(run.agent)}, design ${run.design}, seed ${run.seed}, saved ${run.timestamp}`;
+    setStatus(`replaying ${short(run.agent)} (saved run)`);
+    for (const entry of run.experiments || []) {
+      const kind = Object.keys(entry.action)[0];
+      await showObservation(entry.action, { ...entry.observation }, kind === "release" ? 2 : 1.5);
+    }
+    S.curve = run.curve; drawForceChart();
+    showVerdict(run.result, run.answer,
+      ` · ${run.seconds}s · ${(run.tokens || 0).toLocaleString()} tokens · replay of a saved run`);
+    setStatus(`replay of ${short(run.agent)}: ${run.result.passed ? "PASS" : "FAIL"}`);
+  } catch (e) { setStatus(e.message); }
+  setBusy(false);
+  S.sid = null; updateBudget();
+};
+
 // ------------------------------------------------------------------- init
 (async () => {
   try {
@@ -602,6 +731,8 @@ async function loadResults() {
     const a = await api("/api/agents");
     $("agentSel").innerHTML = a.agents.map((x) => `<option>${x.name}</option>`).join("");
     await selectDesign("S");
+    await loadLeaderboard();
+    await loadSavedRuns();
     await loadPipeline();
     await loadResults();
   } catch (e) {

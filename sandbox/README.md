@@ -10,6 +10,50 @@ The hidden law is the team's redesigned Hooke's law (`physics law redesign.py`):
 A 1 kg block on a frictionless rail is attached to a wall by a spring that follows this
 law. Agents never see the formula. They only get the data.
 
+## The five team laws
+
+All five redesigned laws run in the same sandbox. Laws 2 to 5 come from the team scripts in
+the repo top folder, with the same constants.
+
+| `--law` name | Team file | Hidden law (agents never see it) | Input range | Designs |
+|---|---|---|---|---|
+| `power_spring` | `physics law redesign.py` | F(x) = -5·\|x\|^1.5·sign(x) | -3 to 3 m | S, A, B, C |
+| `kinetic_energy` | `kinetic_energy_law2.py` | E_k(v) = 0.5·m²/v, m = 2 kg | 0.5 to 10 m/s | S, A, C |
+| `wave_speed` | `wavespeed_law3.py` | v(f) = 15·ln(0.5·f), λ = 0.5 m | 2 to 100 Hz | S, A, C |
+| `screened_coulomb` | `electrostatics_law4.py` | F(r) = 6·e^(-0.4r)/r², q₁ = 2, q₂ = 3, k = 1 | 0.2 to 5 m | S, A, C |
+| `saturating_ohm` | `ohms_law5.py` | I(V) = 5·tanh(V/2) | -10 to 10 V | S, A, C |
+
+- The fixed values in the team scripts (mass, wavelength, charges) stay fixed and are told to the
+  agent, so each law has one input. The agent can only discover the shape in that input.
+- For laws 2 to 5 the agent uses one tool, `{"measure": {"x": ...}}`, and reads `y`. Design B
+  (release and watch) needs a moving block, so it is spring only.
+- The answer may use `x` or the law's own symbol (`E_k = 2/v`, `I = 5 tanh(V/2)`). The grader
+  accepts `tanh`, `sinh`, `cosh` and `ln f` without brackets.
+- Reference methods: curve fitting solves laws 1 and 2 (both are power laws) but fails laws 3, 4
+  and 5 (log, exponential decay, tanh). The textbook-style linear guess fails all five.
+
+```powershell
+py generate_data.py --law wave_speed                     # 50 datasets for one law
+py pipeline.py --law wave_speed --datasets 10            # design S, team prompt
+py experiment.py --law screened_coulomb --design C --agents "RapidScreen gpt-6-sol" --seeds 10
+py compare.py --law screened_coulomb                     # leaderboard for that law
+py rsi.py --small "RapidScreen gpt-5.4-nano" --big "RapidScreen gpt-6-sol" --design C --test-law saturating_ohm
+```
+
+The last line practises on the four spring training laws and tests on a new kind of law, which
+shows whether a strategy learned on springs transfers.
+
+## Autonomous experiments, self-improvement and the leaderboard
+
+| File | What it does |
+|---|---|
+| `experiment.py` | The agent runs the whole experiment by itself from one fixed objective prompt. Every run is saved in full in `results/runs/`, with a summary row in `results/experiments.tsv`. |
+| `rsi.py` | Self-improvement loop: the small model practises on training laws, rewrites its own strategy notes, keeps them only if they score at least as well, and is tested once on a held-out law (`--test-law`). |
+| `compare.py` | Leaderboard per design from each model's latest runs (`--law`, `--latest`). |
+| `server.py`, `index.html` | The 3D page also shows the leaderboard and can replay any saved run. |
+
+API models go in `models.json` (the RapidScreen models share one key, `RAPIDSCREEN_API_KEY`).
+
 ## The pipeline (as agreed in the team chat)
 
 ```

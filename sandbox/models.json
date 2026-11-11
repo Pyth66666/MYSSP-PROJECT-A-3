@@ -26,6 +26,96 @@
     "notes": "Smaller and faster. ollama pull qwen2.5:3b"
   },
   {
+    "name": "RapidScreen gpt-5.5",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-5.5",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "Big model: the comparison target for self-improvement."
+  },
+  {
+    "name": "RapidScreen gpt-5.4-mini",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-5.4-mini",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "Mid-size model."
+  },
+  {
+    "name": "RapidScreen gpt-5.4-nano",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-5.4-nano",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "Smallest and cheapest API model."
+  },
+  {
+    "name": "RapidScreen deepseek-v4-flash",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "deepseek-v4-flash",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 4096,
+    "enabled": true,
+    "notes": "DeepSeek fast model."
+  },
+  {
+    "name": "RapidScreen gpt-5.4",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-5.4",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "GPT-5.4 full size."
+  },
+  {
+    "name": "RapidScreen gpt-5.6-terra",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-5.6-terra",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "GPT-5.6 terra."
+  },
+  {
+    "name": "RapidScreen gpt-6-sol",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-6-sol",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "GPT-6 sol."
+  },
+  {
+    "name": "RapidScreen gpt-6-luna",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "gpt-6-luna",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 8000,
+    "enabled": true,
+    "notes": "GPT-6 luna."
+  },
+  {
+    "name": "RapidScreen deepseek-v4.1-flash",
+    "type": "chat",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "deepseek-v4.1-flash",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "max_tokens": 4096,
+    "enabled": true,
+    "notes": "DeepSeek v4.1 fast model."
+  },
+  {
     "name": "OpenAI",
     "type": "chat",
     "base_url": "https://api.openai.com/v1",

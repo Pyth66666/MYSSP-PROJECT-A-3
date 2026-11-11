@@ -31,19 +31,24 @@ COLUMNS = ["time", "position", "velocity", "acceleration", "force"]
 
 
 def write_datasets(law_name, n):
+    """Spring laws: simulated releases (time, position, velocity, acceleration, force).
+    General laws: two columns, the input and the output, for example
+    velocity,kinetic_energy. In index.csv, x0 is the first input of the dataset."""
     law = get_law(law_name)
     folder = os.path.join(HERE, "data", law.name)
     os.makedirs(folder, exist_ok=True)
+    columns = COLUMNS if law.is_spring else [law.x_col, law.y_col]
     index = []
     for i in range(n):
         rows = static_dataset(law, i)
         name = f"dataset_{i:02d}.csv"
         with open(os.path.join(folder, name), "w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=COLUMNS)
+            w = csv.DictWriter(f, fieldnames=columns)
             w.writeheader()
             w.writerows(rows)
-        index.append({"dataset": i, "file": name, "x0": static_x0(i),
-                      "rows": len(rows), "dt": STATIC_DT})
+        index.append({"dataset": i, "file": name,
+                      "x0": static_x0(i) if law.is_spring else rows[0][law.x_col],
+                      "rows": len(rows), "dt": STATIC_DT if law.is_spring else ""})
     with open(os.path.join(folder, "index.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["dataset", "file", "x0", "rows", "dt"])
         w.writeheader()
@@ -61,8 +66,8 @@ def write_json_packet(law_name, dataset, path, n_rows=STATIC_ROWS):
     rows = sample_rows(static_dataset(law, dataset), n_rows)
     packet = {
         "dataset": dataset,
-        "x_value": [r["position"] for r in rows],
-        "y_value": [r["force"] for r in rows],
+        "x_value": [r[law.x_col] for r in rows],
+        "y_value": [r[law.y_col] for r in rows],
     }
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
