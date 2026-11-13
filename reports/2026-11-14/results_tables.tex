@@ -1,0 +1,82 @@
+% Results tables, generated from the sandbox run logs on 14 November 2026.
+% Each cell is passes out of runs, using each model's 10 latest runs.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\hline
+Model & Spring & Kinetic energy & Wave speed & Screened Coulomb & Saturating Ohm & Total \\
+\hline
+gpt-6-sol & 10/10 & 10/10 & 10/10 & 10/10 & 10/10 & 50/50 \\
+gpt-6-luna & 10/10 & 10/10 & 10/10 & 10/10 & 10/10 & 50/50 \\
+gpt-5.6-terra & 10/10 & 10/10 & 10/10 & 10/10 & 10/10 & 50/50 \\
+gpt-5.5 & 10/10 & 10/10 & 10/10 & 10/10 & 10/10 & 50/50 \\
+deepseek-v4.1-flash & 9/10 & 10/10 & 10/10 & 10/10 & 10/10 & 49/50 \\
+deepseek-v4-flash & 10/10 & 10/10 & 6/10 & 8/10 & 9/10 & 43/50 \\
+gpt-5.4 & 10/10 & 10/10 & 0/10 & 8/10 & 10/10 & 38/50 \\
+gpt-5.4-mini & 7/10 & 8/10 & 0/10 & 0/10 & 9/10 & 24/50 \\
+gpt-5.4-nano & 10/10 & 5/10 & 0/10 & 0/10 & 0/10 & 15/50 \\
+\hline
+\end{tabular}
+\caption{Design A (force probe, no noise). Passes out of 10 runs per model and law.}
+\label{tab:designA}
+\end{table}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\hline
+Model & Spring & Kinetic energy & Wave speed & Screened Coulomb & Saturating Ohm & Total \\
+\hline
+gpt-6-sol & 10/10 & 10/10 & 10/10 & 10/10 & 10/10 & 50/50 \\
+gpt-5.5 & 8/10 & 10/10 & 10/10 & 10/10 & 10/10 & 48/50 \\
+gpt-5.6-terra & 7/10 & 10/10 & 10/10 & 10/10 & 10/10 & 47/50 \\
+deepseek-v4.1-flash & 9/10 & 10/10 & 8/10 & 10/10 & 8/10 & 45/50 \\
+deepseek-v4-flash & 10/10 & 10/10 & 5/10 & 9/10 & 8/10 & 42/50 \\
+gpt-6-luna & 6/10 & 10/10 & 3/10 & 10/10 & 10/10 & 39/50 \\
+gpt-5.4 & 2/10 & 9/10 & 0/10 & 0/10 & 9/10 & 20/50 \\
+gpt-5.4-mini & 0/10 & 10/10 & 0/10 & 0/10 & 0/10 & 10/50 \\
+gpt-5.4-nano & 0/10 & 0/10 & 0/10 & 0/10 & 0/10 & 0/50 \\
+\hline
+\end{tabular}
+\caption{Design C (noisy lab, 3\% noise). Passes out of 10 runs per model and law.}
+\label{tab:designC}
+\end{table}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\hline
+Model & Pass & Exact & Median error \\
+\hline
+gpt-6-sol & 9/10 & 9/10 & 0.00\% \\
+deepseek-v4.1-flash & 7/10 & 7/10 & 0.00\% \\
+deepseek-v4-flash & 5/10 & 5/10 & 2.50\% \\
+gpt-6-luna & 4/10 & 4/10 & 3.46\% \\
+gpt-5.6-terra & 3/10 & 3/10 & 3.46\% \\
+gpt-5.5 & 1/10 & 1/10 & 3.46\% \\
+gpt-5.4 & 0/10 & 0/10 & 72.87\% \\
+gpt-5.4-mini & 0/10 & 0/10 & 72.87\% \\
+gpt-5.4-nano & 0/10 & 0/10 & 81.57\% \\
+\hline
+\end{tabular}
+\caption{Design B (release and watch, spring only). 10 runs per model.}
+\label{tab:designB}
+\end{table}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccc}
+\hline
+Test law & Small, no notes & Small with notes & Big, no notes \\
+\hline
+Kinetic energy & 0/10 & 0/10 & 10/10 \\
+Wave speed & 0/10 & 0/10 & 10/10 \\
+Screened Coulomb & 0/10 & 0/10 & 10/10 \\
+Saturating Ohm & 0/10 & 0/10 & 10/10 \\
+\hline
+\end{tabular}
+\caption{Self improvement test on design C. Small model gpt-5.4-nano, big model gpt-5.5. Notes were written over 3 rounds on four training springs. 10 test runs each.}
+\label{tab:rsi}
+\end{table}

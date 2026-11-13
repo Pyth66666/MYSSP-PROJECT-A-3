@@ -32,6 +32,15 @@ def as_float(v):
         return None
 
 
+NETWORK_ERRORS = ("urlopen error", "getaddrinfo", "timed out", "Connection", "RemoteDisconnected")
+
+
+def is_network_error(answer):
+    """True when a run failed only because the internet or the API connection dropped."""
+    answer = str(answer or "")
+    return answer.startswith("agent error") and any(e in answer for e in NETWORK_ERRORS)
+
+
 def leaderboard(out_dir, law="power_spring", latest=10, designs=None, include_rsi=False):
     """Rows for the leaderboard, best first per design (used by the 3D page)."""
     path = os.path.join(out_dir, "experiments.tsv")
@@ -45,6 +54,8 @@ def leaderboard(out_dir, law="power_spring", latest=10, designs=None, include_rs
             continue
         if not include_rsi and r["label"].startswith("rsi"):
             continue
+        if is_network_error(r.get("answer", "")):
+            continue  # the request never reached the model, so it says nothing about it
         groups[(r["design"], r["agent"])].append(r)
     table = []
     for (design, agent), rs in groups.items():
@@ -76,6 +87,8 @@ def saved_runs(out_dir, law="power_spring"):
     seen, out = set(), []
     for r in sorted(rows, key=lambda r: r["timestamp"], reverse=True):
         if (law and r["law"] != law) or r["label"] != "experiment" or not r.get("log_file"):
+            continue
+        if is_network_error(r.get("answer", "")):
             continue
         key = (r["law"], r["agent"], r["design"], r["seed"])
         if key in seen:
