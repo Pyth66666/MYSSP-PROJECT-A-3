@@ -7,7 +7,7 @@ Pages
   GET  /static/...            three.js and other assets
 
 API (JSON)
-  GET  /api/designs           the three sandbox designs
+  GET  /api/designs           the sandbox designs and the five team laws
   GET  /api/agents            agents that can run right now
   GET  /api/results           last bench.py result table
   GET  /api/pipeline          last pipeline.py result table (50 CSV datasets)
@@ -34,7 +34,7 @@ from urllib.parse import parse_qs, urlparse
 import agent as agents
 import compare
 import grader
-from laws import DEFAULT_LAW, LAWS
+from laws import DEFAULT_LAW, LAWS, TEAM_LAWS
 from sandbox_env import (DESIGNS, X_LIMIT, ExperimentError, LabSession, static_dataset,
                          static_x0, truth_curve)
 
@@ -71,6 +71,23 @@ def formula_curve(answer, n=121, law=None):
         xs.append(x)
         fs.append(v)
     return {"x": xs, "F": fs}
+
+
+LAW_TITLES = {"power_spring": "1 \u00b7 Spring", "kinetic_energy": "2 \u00b7 Kinetic energy",
+              "wave_speed": "3 \u00b7 Wave speed", "screened_coulomb": "4 \u00b7 Screened Coulomb",
+              "saturating_ohm": "5 \u00b7 Saturating Ohm"}
+
+
+def law_info(name):
+    """What the page needs to draw a law: names, units, range, and a scale for the
+    3D column (the largest |y| over the range). Agents never see this."""
+    L = LAWS[name]
+    lo, hi = L.x_range
+    ys = [L.force(lo + (hi - lo) * i / 199) for i in range(200)]
+    return {"name": name, "title": LAW_TITLES.get(name, name), "kind": L.kind,
+            "x_name": L.x_name, "x_sym": L.x_sym, "x_unit": L.x_unit,
+            "y_name": L.y_name, "y_sym": L.y_sym, "y_unit": L.y_unit,
+            "x_range": [lo, hi], "y_abs_max": max(abs(y) for y in ys)}
 
 
 def public_designs():
@@ -111,7 +128,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(os.path.join(STATIC, u.path[len("/static/"):]))
         if u.path == "/api/designs":
             return self._send(200, {"designs": public_designs(),
-                                    "laws": list(LAWS), "default_law": DEFAULT_LAW})
+                                    "laws": list(LAWS), "default_law": DEFAULT_LAW,
+                                    "team_laws": [law_info(n) for n in TEAM_LAWS]})
         if u.path == "/api/agents":
             pool = agent_pool(refresh="refresh" in q)
             return self._send(200, {"agents": [{"name": a.name, "kind": a.kind} for a in pool]})
@@ -130,9 +148,12 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.load(f)
             return self._send(200, {k: data[k] for k in ("timestamp", "law", "summary")})
         if u.path == "/api/leaderboard":
-            return self._send(200, {"rows": compare.leaderboard(os.path.join(HERE, "results"))})
+            law = q.get("law", [DEFAULT_LAW])[0]
+            return self._send(200, {"law": law,
+                                    "rows": compare.leaderboard(os.path.join(HERE, "results"), law=law)})
         if u.path == "/api/saved_runs":
-            return self._send(200, {"runs": compare.saved_runs(os.path.join(HERE, "results"))})
+            law = q.get("law", [None])[0] or None
+            return self._send(200, {"runs": compare.saved_runs(os.path.join(HERE, "results"), law=law)})
         if u.path == "/api/saved_run":
             name = os.path.basename(q.get("file", [""])[0].replace("\\", "/"))
             path = os.path.join(HERE, "results", "runs", name)
@@ -169,11 +190,12 @@ class Handler(BaseHTTPRequestHandler):
                     SESSIONS[sid] = lab
                 out = {"sid": sid, "card": lab.card()}
                 if lab.design["id"] == "S":
-                    rows = static_dataset(lab.law, lab.seed)
                     out["prompt"] = agents.team_prompt(out["card"])
-                    out["x0"] = static_x0(lab.seed)
-                    out["trajectory"] = {"t": [r["time"] for r in rows],
-                                         "x": [r["position"] for r in rows]}
+                    if lab.law.is_spring:
+                        rows = static_dataset(lab.law, lab.seed)
+                        out["x0"] = static_x0(lab.seed)
+                        out["trajectory"] = {"t": [r["time"] for r in rows],
+                                             "x": [r["position"] for r in rows]}
                 return self._send(200, out)
 
             if u.path == "/api/experiment":

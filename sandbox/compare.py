@@ -66,7 +66,8 @@ def leaderboard(out_dir, law="power_spring", latest=10, designs=None, include_rs
 
 
 def saved_runs(out_dir, law="power_spring"):
-    """Latest saved autonomous run per (agent, design, seed), for replay."""
+    """Latest saved autonomous run per (law, agent, design, seed), for replay.
+    law=None lists every law."""
     path = os.path.join(out_dir, "experiments.tsv")
     if not os.path.exists(path):
         return []
@@ -74,17 +75,17 @@ def saved_runs(out_dir, law="power_spring"):
         rows = list(csv.DictReader(f, delimiter="\t"))
     seen, out = set(), []
     for r in sorted(rows, key=lambda r: r["timestamp"], reverse=True):
-        if r["law"] != law or r["label"] != "experiment" or not r.get("log_file"):
+        if (law and r["law"] != law) or r["label"] != "experiment" or not r.get("log_file"):
             continue
-        key = (r["agent"], r["design"], r["seed"])
+        key = (r["law"], r["agent"], r["design"], r["seed"])
         if key in seen:
             continue
         seen.add(key)
-        out.append({"file": r["log_file"].replace("\\", "/"), "agent": r["agent"],
+        out.append({"file": r["log_file"].replace("\\", "/"), "agent": r["agent"], "law": r["law"],
                     "design": r["design"], "seed": int(r["seed"]),
                     "passed": as_bool(r["passed"]), "nrmse": as_float(r["nrmse"]),
                     "timestamp": r["timestamp"]})
-    out.sort(key=lambda r: (r["design"], r["agent"], r["seed"]))
+    out.sort(key=lambda r: (r["law"], r["design"], r["agent"], r["seed"]))
     return out
 
 

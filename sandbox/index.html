@@ -97,6 +97,12 @@
   td.num { font-family: var(--mono); color: #cfe3f5; }
   tbody tr:hover td { background: rgba(62, 224, 255, .04); }
   .results { grid-column: 1 / -1; }
+  .charts.one { grid-template-columns: 1fr; }
+  .lawrow { margin: 0 0 10px; }
+  .lawrow label { min-width: 0; font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+                  color: var(--accent); }
+  .lawrow select { font-weight: 600; }
+  .tabs button:disabled { opacity: .3; cursor: not-allowed; box-shadow: none; }
   .lb { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
   .lb h4 { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
            margin: 0 0 6px; }
@@ -126,7 +132,7 @@
 <header>
   <div class="eyebrow">MYSSP A-3 &middot; Physics discovery lab</div>
   <h1>Physics Discovery Sandbox</h1>
-  <p>A block on a spring with a hidden force law. The agent gets data (design S) or runs experiments (A&ndash;C), proposes F(x), and the SymPy evaluator scores it against the hidden law.</p>
+  <p>Five hidden laws, from a spring to a saturating current. The agent gets data (design S) or runs its own experiments (designs A to C), proposes a formula, and the SymPy evaluator scores it against the hidden law.</p>
 </header>
 
 <main>
@@ -137,12 +143,14 @@
       <div id="status">ready</div>
     </div>
     <div class="charts">
-      <div class="card"><h2>Force vs position</h2><canvas id="fchart"></canvas></div>
-      <div class="card"><h2>Position vs time (releases)</h2><canvas id="tchart"></canvas></div>
+      <div class="card"><h2 id="fTitle">Force vs position</h2><canvas id="fchart"></canvas></div>
+      <div class="card" id="tCard"><h2>Position vs time (releases)</h2><canvas id="tchart"></canvas></div>
     </div>
   </section>
 
   <aside class="card">
+    <div class="row lawrow"><label for="lawSel">Hidden law</label>
+      <select id="lawSel" aria-label="Hidden law"></select></div>
     <div class="tabs" id="tabs"></div>
     <p class="summary" id="dSummary"></p>
     <ul class="pl" id="dPoints"></ul>
@@ -156,7 +164,7 @@
     </div>
     <div id="probeTool">
       <div class="row">
-        <label for="px">Hold at x</label>
+        <label for="px" id="pxLabel">Hold at x</label>
         <input type="range" id="px" min="-3" max="3" step="0.05" value="1.5">
         <output id="pxv">1.50</output>
       </div>
@@ -228,7 +236,9 @@ const S = {
   designs: [], design: null, law: null, sid: null, budgetLeft: 0,
   points: [], releases: [], curve: null, truth: null, busy: false,
   x: 0, force: null, holding: false, staticData: [], traj: null,
+  laws: [], lawInfo: null,
 };
+const isSpring = () => !S.lawInfo || S.lawInfo.kind === "spring";
 
 // ------------------------------------------------------------- 3D scene
 const canvas = $("view");
@@ -290,13 +300,31 @@ function textSprite(text, size = 0.32, color = "#8aa0b4") {
   sp.scale.set(size * 4, size, 1);
   return sp;
 }
-for (let m = -3; m <= 3; m++) {
-  const tick = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, m === 0 ? 1.0 : 0.5),
-                              m === 0 ? new THREE.MeshBasicMaterial({ color: 0x3ee0ff }) : mat(0x3a5068));
-  tick.position.set(m, -0.31, 0); scene.add(tick);
-  const label = textSprite(m === 0 ? "x = 0" : `${m} m`, 0.26, m === 0 ? "#3ee0ff" : "#8aa0b4");
-  label.position.set(m, -0.2, 0.9); scene.add(label);
+// Rail ticks. Spring laws: metres from rest. Other laws: the rail is the input axis.
+let tickObjs = [];
+const toU = (x) => isSpring() ? x
+  : -3 + 6 * (x - S.lawInfo.x_range[0]) / (S.lawInfo.x_range[1] - S.lawInfo.x_range[0]);
+const fmt = (v) => Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : +v.toFixed(2);
+function buildTicks() {
+  for (const o of tickObjs) scene.remove(o);
+  tickObjs = [];
+  for (let m = -3; m <= 3; m++) {
+    const zero = isSpring() && m === 0;
+    const tick = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, zero ? 1.0 : 0.5),
+                                zero ? new THREE.MeshBasicMaterial({ color: 0x3ee0ff }) : mat(0x3a5068));
+    tick.position.set(m, -0.31, 0);
+    let text;
+    if (isSpring()) text = m === 0 ? "x = 0" : `${m} m`;
+    else {
+      const [lo, hi] = S.lawInfo.x_range;
+      text = `${fmt(lo + (hi - lo) * (m + 3) / 6)} ${S.lawInfo.x_unit}`;
+    }
+    const label = textSprite(text, 0.26, zero ? "#3ee0ff" : "#8aa0b4");
+    label.position.set(m, -0.2, 0.9);
+    scene.add(tick); scene.add(label); tickObjs.push(tick, label);
+  }
 }
+buildTicks();
 
 const block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK, BLOCK, BLOCK),
   mat(0x0f2a44, { metalness: 0.35, roughness: 0.3, emissive: 0x0a3a58, emissiveIntensity: 0.7 }));
@@ -321,6 +349,20 @@ function updateSpring(x) {
   else { spring = new THREE.Mesh(geo, springMat); spring.castShadow = true; scene.add(spring); }
 }
 
+// Other laws: a glowing column on the carriage shows the measured output.
+const columnMat = mat(0x0f2a44, { emissive: 0x3ee0ff, emissiveIntensity: 0.9, transparent: true, opacity: 0.85 });
+const column = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1, 28), columnMat);
+column.visible = false; scene.add(column);
+const columnTop = textSprite("", 0.24, "#ffffff"); columnTop.visible = false; scene.add(columnTop);
+function setColumnLabel(text, color) {
+  const c = document.createElement("canvas"); c.width = 256; c.height = 64;
+  const g = c.getContext("2d");
+  g.font = "600 30px ui-monospace, Consolas, monospace"; g.fillStyle = color;
+  g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 128, 32);
+  columnTop.material.map.dispose(); columnTop.material.map = new THREE.CanvasTexture(c);
+  columnTop.material.needsUpdate = true;
+}
+
 const arrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 1, 0xff7a45, 0.22, 0.14);
 arrow.visible = false; scene.add(arrow);
 const probe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.3, 12),
@@ -328,6 +370,7 @@ const probe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.3, 12),
 probe.visible = false; scene.add(probe);
 
 function setBlock(x, force = null, holding = false) {
+  if (!isSpring()) return setCarriage(x, force, holding);
   S.x = x; S.force = force; S.holding = holding;
   block.position.set(x, 0, 0);
   updateSpring(x);
@@ -342,6 +385,36 @@ function setBlock(x, force = null, holding = false) {
   } else arrow.visible = false;
   $("hud").textContent = `x = ${x.toFixed(3)} m` +
     (force !== null ? `   F = ${force.toFixed(3)} N` : "");
+}
+
+function setCarriage(x, y = null, holding = false) {
+  const L = S.lawInfo, u = toU(x);
+  S.x = x; S.force = y; S.holding = holding;
+  block.position.set(u, 0, 0);
+  probe.visible = holding; probe.position.set(u, BLOCK / 2 + 0.65, 0);
+  arrow.visible = false;
+  if (y !== null && isFinite(y)) {
+    const h = 0.04 + 1.9 * Math.min(1.1, Math.abs(y) / (L.y_abs_max || 1));
+    const neg = y < 0;
+    column.scale.set(1, h, 1);
+    column.position.set(u, BLOCK / 2 + h / 2, 0);
+    columnMat.emissive.setHex(neg ? 0xff7a45 : 0x3ee0ff);
+    column.visible = true;
+    setColumnLabel(`${L.y_sym} = ${fmt(y)} ${L.y_unit}`, neg ? "#ffb08a" : "#bff6ff");
+    columnTop.position.set(u, BLOCK / 2 + h + 0.25, 0); columnTop.visible = true;
+    probe.visible = false;
+  } else { column.visible = false; columnTop.visible = false; }
+  $("hud").textContent = `${L.x_sym} = ${x.toFixed(3)} ${L.x_unit}` +
+    (y !== null ? `   ${L.y_sym} = ${y.toFixed(3)} ${L.y_unit}` : "");
+}
+
+function setLawMode() {
+  const springLaw = isSpring();
+  for (const o of [wall, strip, massLabel]) o.visible = springLaw;
+  column.visible = false; columnTop.visible = false;
+  buildTicks();
+  if (springLaw) setBlock(0); else setCarriage(S.lawInfo.x_range[0]);
+  if (spring) spring.visible = springLaw;   // the coil mesh exists after the first setBlock
 }
 
 function resize() {
@@ -451,10 +524,23 @@ function drawForceChart() {
   const ys = [...S.points.map((p) => p.F)];
   if (S.curve) ys.push(...S.curve.F.filter((v) => v !== null && isFinite(v)));
   if ($("reveal").checked && S.truth) ys.push(...S.truth.F);
-  const m = Math.max(5, ...ys.map(Math.abs)) * 1.1;
-  const [X, Y] = axes(g, W, H, [-3, 3], [-m, m], "x (m)", "F (N)");
+  const L = S.lawInfo;
+  let xr, yr, xl, yl, lab;
+  if (isSpring()) {
+    const m = Math.max(5, ...ys.map(Math.abs)) * 1.1;
+    xr = [-3, 3]; yr = [-m, m]; xl = "x (m)"; yl = "F (N)"; lab = "submitted F(x)";
+  } else {
+    const fin = ys.filter((v) => v !== null && isFinite(v));
+    const a = L.y_abs_max || 1;
+    let lo = fin.length ? Math.min(0, ...fin) : -0.1 * a, hi = fin.length ? Math.max(0, ...fin) : 1.1 * a;
+    lo = Math.max(lo, -3 * a); hi = Math.min(hi, 3 * a);
+    const pad = 0.08 * (hi - lo || 1);
+    xr = L.x_range; yr = [lo - pad, hi + pad];
+    xl = `${L.x_sym} (${L.x_unit})`; yl = `${L.y_sym} (${L.y_unit})`; lab = `submitted ${L.y_sym}(${L.x_sym})`;
+  }
+  const [X, Y] = axes(g, W, H, xr, yr, xl, yl);
   const items = [];
-  if (S.curve) { line(g, X, Y, S.curve.x, S.curve.F, "#3ee0ff", [], 2.5); items.push(["submitted F(x)", "#3ee0ff"]); }
+  if (S.curve) { line(g, X, Y, S.curve.x, S.curve.F, "#3ee0ff", [], 2.5); items.push([lab, "#3ee0ff"]); }
   if ($("reveal").checked && S.truth) {
     line(g, X, Y, S.truth.x, S.truth.F, "#ff8a3d", [6, 5]); items.push(["hidden law", "#ff8a3d"]);
   }
@@ -464,12 +550,14 @@ function drawForceChart() {
   if (!S.points.length && !S.curve && !(S.truth && $("reveal").checked)) {
     g.fillStyle = "#7f93a8"; g.textAlign = "center";
     g.fillText(S.design && S.design.id === "B"
-      ? "No force sensor in this design. Infer F from the motion." : "Measure the force to add points.", W / 2, H / 2 - 14);
+      ? "No force sensor in this design. Infer F from the motion."
+      : isSpring() ? "Measure the force to add points." : "Measure to add points.", W / 2, H / 2 - 14);
   }
   legend(g, W, items);
 }
 
 function drawTimeChart(cursor = null) {
+  if (!isSpring()) return;
   const [g, W, H] = setupCanvas($("tchart"));
   const tmax = Math.max(4, ...S.releases.map((r) => r.t[r.t.length - 1]));
   const [X, Y] = axes(g, W, H, [0, Math.ceil(tmax)], [-3.3, 3.3], "t (s)", "x (m)");
@@ -502,15 +590,31 @@ function updateBudget() {
   $("releaseBtn").disabled = S.busy || none;
 }
 
+const GENERAL_TEXT = {
+  S: { summary: "The agent gets a fixed table of 50 Y readings at different X values and must find the law from it.",
+       points: ["+ Same data for every model, so the comparison is fair",
+                "&minus; The agent cannot choose where to look"] },
+  A: { summary: "Set the X to any value in range and read the Y. The most direct view of the law.",
+       points: ["+ The agent picks its own measurements",
+                "&minus; No noise, so it is close to a curve fitting exercise"] },
+  C: { summary: "Same as A, but every reading has about 3% random error, like a real lab.",
+       points: ["+ Closest to a real experiment",
+                "&minus; Harder, the agent has to see the trend through the noise"] },
+};
+
 function selectDesign(id) {
   S.design = S.designs.find((d) => d.id === id);
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.id === id));
   const d = S.design;
-  $("dSummary").textContent = d.summary;
-  $("dPoints").innerHTML = d.strengths.map((s) => `<li>+ ${s}</li>`).join("") +
-                           d.limits.map((s) => `<li>&minus; ${s}</li>`).join("");
-  $("probeTool").style.display = d.tools.includes("measure_force") ? "" : "none";
-  $("releaseTool").style.display = d.tools.includes("release") ? "" : "none";
+  const L = S.lawInfo, g = !isSpring() && GENERAL_TEXT[d.id];
+  $("dSummary").textContent = g ? g.summary.replace(/X/g, L.x_name).replace(/Y/g, L.y_name) : d.summary;
+  const pts = g ? g.points.map((s) => s.replace(/X/g, L.x_name).replace(/Y/g, L.y_name)) : null;
+  $("dPoints").innerHTML = g ? pts.map((s) => `<li>${s}</li>`).join("")
+    : d.strengths.map((s) => `<li>+ ${s}</li>`).join("") +
+      d.limits.map((s) => `<li>&minus; ${s}</li>`).join("");
+  $("probeTool").style.display = (isSpring() ? d.tools.includes("measure_force")
+                                             : d.id === "A" || d.id === "C") ? "" : "none";
+  $("releaseTool").style.display = isSpring() && d.tools.includes("release") ? "" : "none";
   $("staticTool").style.display = d.id === "S" ? "" : "none";
   $("seedLabel").textContent = d.id === "S" ? "Dataset" : "Seed";
   $("seed").max = d.id === "S" ? 49 : 9999;
@@ -521,8 +625,13 @@ async function newSession() {
   const data = await api("/api/session", { design: S.design.id, seed: +$("seed").value || 0, law: S.law });
   S.sid = data.sid; S.budgetLeft = data.card.budget;
   S.points = []; S.releases = []; S.curve = null;
-  S.staticData = data.card.data || [];
+  S.staticData = (data.card.data || []).map((r) => ({ x: r.x, F: r.F !== undefined ? r.F : r.y }));
   S.traj = data.trajectory ? { x0: data.x0, t: data.trajectory.t, x: data.trajectory.x } : null;
+  if (!isSpring() && S.design.id === "S") {
+    S.points = [...S.staticData];
+    $("promptText").textContent = data.prompt;
+    $("x0info").textContent = `dataset ${+$("seed").value || 0}: ${S.staticData.length} rows sent to the agent`;
+  }
   if (S.traj) {
     S.points = [...S.staticData];
     S.releases = [S.traj];
@@ -530,7 +639,7 @@ async function newSession() {
     $("x0info").textContent = `x0 = ${data.x0.toFixed(2)} m, 100 rows, 20 sent`;
   }
   $("verdict").className = "verdict"; $("log").textContent = "";
-  setBlock(0); updateBudget(); redraw();
+  setBlock(isSpring() ? 0 : S.lawInfo.x_range[0]); updateBudget(); redraw();
   setStatus(`design ${S.design.id}: new session, seed ${+$("seed").value || 0}`);
 }
 
@@ -546,11 +655,13 @@ async function doExperiment(action) {
 }
 
 async function showObservation(action, obs, speed) {
-  if (action.measure_force) {
-    setStatus(`measuring force at x = ${obs.x.toFixed(2)} m`);
+  if (action.measure_force || action.measure) {
+    const v = obs.F !== undefined ? obs.F : obs.y;
+    setStatus(isSpring() ? `measuring force at x = ${obs.x.toFixed(2)} m`
+      : `measuring ${S.lawInfo.y_name} at ${S.lawInfo.x_sym} = ${fmt(obs.x)} ${S.lawInfo.x_unit}`);
     await moveTo(obs.x);
-    setBlock(obs.x, obs.F, true);
-    S.points.push({ x: obs.x, F: obs.F });
+    setBlock(obs.x, v, true);
+    S.points.push({ x: obs.x, F: v });
     drawForceChart();
     await sleep(350 / speed);
   } else {
@@ -569,12 +680,20 @@ function showVerdict(r, answer, extra = "") {
     ($("reveal").checked ? `<br><span class="note">hidden law: ${r.truth}</span>` : "");
 }
 
-$("probeBtn").onclick = () => doExperiment({ measure_force: { x: +$("px").value } });
+$("probeBtn").onclick = () => doExperiment(isSpring() ? { measure_force: { x: +$("px").value } }
+                                                     : { measure: { x: +$("px").value } });
 $("releaseBtn").onclick = () => doExperiment({ release: { x0: +$("rx").value } });
 $("px").oninput = () => { $("pxv").textContent = (+$("px").value).toFixed(2); };
 $("rx").oninput = () => { $("rxv").textContent = (+$("rx").value).toFixed(2); };
 $("newBtn").onclick = newSession;
 $("playBtn").onclick = async () => {
+  if (!isSpring()) {
+    setBusy(true);
+    setStatus(`playing dataset ${+$("seed").value || 0}: the ${S.staticData.length} rows sent to the agent`);
+    for (const p of S.staticData) { await moveTo(p.x, 220); setBlock(p.x, p.F, false); await sleep(90); }
+    setBusy(false);
+    return;
+  }
   if (!S.traj) return;
   setBusy(true);
   setStatus(`playing dataset ${+$("seed").value || 0}: released at x0 = ${S.traj.x0.toFixed(2)} m, dt = 0.1 s`);
@@ -664,11 +783,16 @@ async function loadResults() {
 const short = (name) => name.replace("RapidScreen ", "");
 
 async function loadLeaderboard() {
-  const r = await api("/api/leaderboard");
-  if (!r.rows || !r.rows.length) return;
+  const r = await api(`/api/leaderboard?law=${S.law}`);
+  if (!r.rows || !r.rows.length) {
+    $("lbMeta").textContent = `(law: ${S.lawInfo ? S.lawInfo.title : S.law})`;
+    $("lbTable").innerHTML = `<p class="note">No autonomous runs for this law yet. Run ` +
+      `<code>py experiment.py --law ${S.law}</code> in the lab folder, then reload.</p>`;
+    return;
+  }
   const designs = [...new Set(r.rows.map((x) => x.design))].sort();
   const cls = (p, n) => (p === n ? "ok" : p === 0 ? "bad" : "mid");
-  $("lbMeta").textContent = "(latest 10 runs per model, law: power_spring, from experiment.py)";
+  $("lbMeta").textContent = `(latest 10 runs per model, law: ${S.lawInfo ? S.lawInfo.title : S.law}, from experiment.py)`;
   $("lbTable").innerHTML = `<div class="lb">` + designs.map((d) => {
     const title = S.designs.find((x) => x.id === d)?.title || "";
     const rows = r.rows.filter((x) => x.design === d);
@@ -684,8 +808,11 @@ async function loadLeaderboard() {
 }
 
 async function loadSavedRuns() {
-  const r = await api("/api/saved_runs");
-  if (!r.runs || !r.runs.length) return;
+  const r = await api(`/api/saved_runs?law=${S.law}`);
+  if (!r.runs || !r.runs.length) {
+    $("replaySel").innerHTML = `<option value="">No saved runs for this law yet</option>`;
+    return;
+  }
   const groups = {};
   for (const x of r.runs) (groups[x.design] ||= []).push(x);
   $("replaySel").innerHTML = Object.keys(groups).sort().map((d) =>
@@ -702,6 +829,7 @@ $("replayBtn").onclick = async () => {
   setBusy(true);
   try {
     const run = await api(`/api/saved_run?file=${encodeURIComponent(file)}`);
+    if (run.law && run.law !== S.law) await selectLaw(run.law, run.design);
     if (!S.design || S.design.id !== run.design) await selectDesign(run.design);
     S.points = []; S.releases = []; S.curve = null; $("verdict").className = "verdict";
     redraw();
@@ -720,19 +848,49 @@ $("replayBtn").onclick = async () => {
   S.sid = null; updateBudget();
 };
 
+// ------------------------------------------------------------- law choice
+async function selectLaw(name, design = null) {
+  S.law = name;
+  S.lawInfo = S.laws.find((l) => l.name === name) || null;
+  S.truth = null;
+  $("lawSel").value = name;
+  const spring = isSpring(), L = S.lawInfo;
+  setLawMode();
+  document.querySelectorAll("#tabs button").forEach((b) => {
+    const off = !spring && b.dataset.id === "B";
+    b.disabled = off;
+    b.title = off ? "Design B needs a moving block, so it only works with the spring" : "";
+  });
+  $("tCard").style.display = spring ? "" : "none";
+  document.querySelector(".charts").classList.toggle("one", !spring);
+  $("fTitle").textContent = spring ? "Force vs position" : `${L.y_name} vs ${L.x_name}`;
+  $("formula").placeholder = spring ? "F(x) = -k*abs(x)**p*sign(x)" : `${L.y_sym} = ... (in ${L.x_sym} or x)`;
+  const [lo, hi] = spring ? [-3, 3] : L.x_range;
+  Object.assign($("px"), { min: lo, max: hi, step: (hi - lo) / 200, value: lo + (hi - lo) * 0.75 });
+  $("pxv").textContent = (+$("px").value).toFixed(2);
+  $("pxLabel").textContent = spring ? "Hold at x" : `Set ${L.x_sym} (${L.x_unit})`;
+  $("probeBtn").textContent = spring ? "Measure force" : `Measure ${L.y_name}`;
+  let d = design || (S.design ? S.design.id : "S");
+  if (!spring && d === "B") d = "A";
+  await selectDesign(d);
+  await loadLeaderboard();
+  await loadSavedRuns();
+}
+$("lawSel").onchange = () => !S.busy && selectLaw($("lawSel").value);
+
 // ------------------------------------------------------------------- init
 (async () => {
   try {
     const d = await api("/api/designs");
     S.designs = d.designs; S.law = d.default_law;
+    S.laws = d.team_laws || [];
+    $("lawSel").innerHTML = S.laws.map((l) => `<option value="${l.name}">${l.title}</option>`).join("");
     $("tabs").innerHTML = S.designs.map((x) =>
       `<button data-id="${x.id}">${x.id} &middot; ${x.title}</button>`).join("");
     document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => !S.busy && selectDesign(b.dataset.id)));
     const a = await api("/api/agents");
     $("agentSel").innerHTML = a.agents.map((x) => `<option>${x.name}</option>`).join("");
-    await selectDesign("S");
-    await loadLeaderboard();
-    await loadSavedRuns();
+    await selectLaw(S.law, "S");
     await loadPipeline();
     await loadResults();
   } catch (e) {
