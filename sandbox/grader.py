@@ -56,6 +56,10 @@ def _clean(chosen):
     return chosen
 
 
+def _states_law(s):
+    return "=" in s or r"\approx" in s or "≈" in s
+
+
 def formula_candidates(text):
     """All plausible formulas in the text, most likely final answer first."""
     text = str(text).strip()
@@ -64,12 +68,14 @@ def formula_candidates(text):
     for f in reversed(final):
         out.append(f.strip().strip("$").strip())
     out.extend(reversed(re.findall(r'"answer"\s*:\s*"([^"]+)"', text)))
+    # LaTeX \boxed{...}: the model's own marked answer, last one first
+    out.extend(reversed([b for b in _boxed(text) if _states_law(b)]))
     blocks = re.findall(r"\$\$(.+?)\$\$|\\\[(.+?)\\\]|\\\((.+?)\\\)|\$(.+?)\$",
                         text, re.DOTALL)
     pieces = [next(p for p in b if p) for b in blocks]
     # Only maths that states a law counts; a lone \( x \) in a sentence does not.
-    out.extend(reversed([p for p in pieces if "=" in p]))
-    out.extend(reversed([ln for ln in text.splitlines() if "=" in ln]))
+    out.extend(reversed([p for p in pieces if _states_law(p)]))
+    out.extend(reversed([ln for ln in text.splitlines() if _states_law(ln)]))
     out.append(text)
     seen, result = set(), []
     for c in out:
@@ -78,6 +84,25 @@ def formula_candidates(text):
             seen.add(c)
             result.append(c)
     return result or [_clean(text)]
+
+
+def _boxed(text):
+    """Contents of every \\boxed{...} in the text, with nested braces."""
+    found = []
+    _replace_braced_command(text, r"\boxed", 1, lambda a: found.append(a[0]) or "")
+    return found
+
+
+def _strip_units_and_notes(s):
+    """Drop what is not part of the formula: a trailing condition after \\qquad or
+    \\quad (for example 'v > 0'), and units written as \\mathrm{..} or \\text{..}."""
+    s = re.split(r"\\qquad|\\quad", s)[0].rstrip().rstrip(".,;").rstrip()
+    s = re.sub(r"\[\s*\\(?:mathrm|text)\s*\{?[^\]]*\]", "", s)   # E_k[\mathrm J]
+    s = re.sub(r"\\(?:mathrm|text|mathit)\s*\{\s*e\s*\}", "e", s)  # Euler e
+    s = _replace_braced_command(s, r"\mathrm", 1, lambda a: "")
+    s = _replace_braced_command(s, r"\text", 1, lambda a: "")
+    s = re.sub(r"\\(?:mathrm|text)\s*[A-Za-z]+", "", s)               # \mathrm J
+    return s.rstrip().rstrip(".,;").rstrip()
 
 
 def extract_formula(text):
@@ -131,6 +156,8 @@ def latex_to_python(expr):
         for wrap in [r"\mathrm", r"\operatorname", r"\text", r"\mathit"]:
             s = s.replace(wrap + "{" + word + "}", word)
     s = s.replace(r"\sgn", "sign")
+    s = _strip_units_and_notes(s)
+    s = s.replace(r"\tfrac", r"\frac")
     s = s.replace(r"\cdot", "*").replace(r"\times", "*")
     s = s.replace(r"\lvert", "|").replace(r"\rvert", "|").replace(r"\vert", "|")
     s = re.sub(r"\\sqrt\[([^\]]+)\]\{", r"\\nroot{\1}{", s)
