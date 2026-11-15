@@ -15,7 +15,9 @@ What this adapter adds, without editing the framework:
      can extract the answer from the long report.
   3. Lets models.json choose the model (it swaps the module's local_llm).
 
-Needs:  pip install crewai   and Ollama running with the model pulled.
+Needs:  pip install crewai. The model is either a local Ollama model
+("ollama/<name>") or an OpenAI-compatible API model ("openai/<name>" with
+api_key_env naming the environment variable that holds the key).
 Supports design S (static dataset) only, because the flow has no way to
 call experiments.
 """
@@ -44,15 +46,26 @@ def _load_flow_module():
     return mod
 
 
+def _usage(llm):
+    """Total tokens and number of model calls made through this LLM object."""
+    try:
+        u = llm.get_token_usage_summary()
+        return int(getattr(u, "total_tokens", 0) or 0), int(getattr(u, "successful_requests", 0) or 0)
+    except Exception:  # noqa: BLE001
+        return 0, 0
+
+
 class CrewAIAgent(Agent):
     kind = "crewai"
     designs = ("S",)
 
-    def __init__(self, name, model, base_url):
+    def __init__(self, name, model, base_url, api_key_env=None):
         self.name = name
-        self.model = model          # e.g. "ollama/qwen2.5-coder:7b"
+        self.model = model          # e.g. "ollama/qwen2.5-coder:7b" or "openai/gpt-6-luna"
         self.base_url = base_url    # e.g. "http://localhost:11434"
+        self.api_key_env = api_key_env
         self.tokens = 0
+        self.calls = 0
 
     def available(self):
         if self.model.startswith("ollama/"):
@@ -65,6 +78,8 @@ class CrewAIAgent(Agent):
                 return want in names or f"{want}:latest" in names
             except Exception:  # noqa: BLE001
                 return False
+        if self.api_key_env:
+            return bool(os.environ.get(self.api_key_env))
         return True
 
     def run(self, lab):
@@ -72,10 +87,13 @@ class CrewAIAgent(Agent):
             raise ValueError("the CrewAI framework only supports the static dataset (design S)")
         from crewai import LLM
         mod = _load_flow_module()
-        mod.local_llm = LLM(model=self.model, base_url=self.base_url)
+        extra = {"api_key": os.environ[self.api_key_env]} if self.api_key_env else {}
+        llm = LLM(model=self.model, base_url=self.base_url, **extra)
+        mod.local_llm = llm
         phenomenon = team_prompt(lab.card()) + FINAL_LINE
         flow = mod.PhysicsLawDiscovery()
         report = flow.kickoff(inputs={"phenomenon": phenomenon})
         report = str(report)
+        self.tokens, self.calls = _usage(llm)
         branch = "supported" if flow.state.refined_results == "" else "refined"
         return report, [f"CrewAI flow finished ({branch} branch)", report[-300:]]

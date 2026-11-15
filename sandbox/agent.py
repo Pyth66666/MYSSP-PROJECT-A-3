@@ -468,7 +468,7 @@ def load_llm_agents(path=None, only_available=True):
         if e.get("type") == "crewai":
             try:
                 from agents_crewai import CrewAIAgent
-                agent = CrewAIAgent(e["name"], e["model"], e["base_url"])
+                agent = CrewAIAgent(e["name"], e["model"], e["base_url"], e.get("api_key_env"))
             except ImportError:
                 continue  # crewai not installed
             if only_available and not agent.available():
