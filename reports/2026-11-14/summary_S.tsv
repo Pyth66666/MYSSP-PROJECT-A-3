@@ -1,0 +1,26 @@
+law	model	batch	runs	passed	exact	median_err	blocked
+kinetic_energy	deepseek-v4-flash	2026-11-14 10:17:11	50	47	47	0.0	0
+kinetic_energy	deepseek-v4.1-flash	2026-11-14 10:21:06	50	50	50	0.0	0
+kinetic_energy	gpt-5.4	2026-11-14 10:03:16	50	50	50	0.0	0
+kinetic_energy	gpt-5.4-mini	2026-11-14 10:07:32	50	40	40	0.0	1
+kinetic_energy	gpt-5.4-nano	2026-11-14 10:10:46	50	15	15	55.77	2
+kinetic_energy	gpt-5.5	2026-11-14 09:53:24	50	50	50	0.0	0
+kinetic_energy	gpt-5.6-terra	2026-11-14 09:47:32	50	50	50	0.0	0
+kinetic_energy	gpt-6-luna	2026-11-14 09:41:06	50	49	49	0.0	0
+kinetic_energy	gpt-6-sol	2026-11-14 09:36:47	50	50	50	0.0	0
+power_spring	deepseek-v4-flash	2026-11-14 21:49:46	50	0	0	33.5	0
+power_spring	gpt-5.6-terra	2026-11-14 10:36:53	50	40	40	0.0	0
+power_spring	gpt-6-luna	2026-11-14 10:04:55	50	12	12	3.46	0
+power_spring	gpt-6-sol	2026-11-14 09:50:08	50	39	38	0.0	0
+saturating_ohm	deepseek-v4-flash	2026-11-14 21:45:33	50	47	45	0.0	0
+saturating_ohm	gpt-5.6-terra	2026-11-14 21:40:18	50	50	26	0.0	0
+saturating_ohm	gpt-6-luna	2026-11-14 21:35:05	50	50	49	0.0	0
+saturating_ohm	gpt-6-sol	2026-11-14 21:31:31	50	49	48	0.0	0
+screened_coulomb	deepseek-v4-flash	2026-11-15 08:04:25	50	34	30	0.0	0
+screened_coulomb	gpt-5.6-terra	2026-11-14 22:17:23	50	50	50	0.0	0
+screened_coulomb	gpt-6-luna	2026-11-14 22:05:16	50	43	43	0.0	0
+screened_coulomb	gpt-6-sol	2026-11-14 22:00:22	50	48	48	0.0	0
+wave_speed	deepseek-v4-flash	2026-11-14 21:52:27	50	0	0	31.87	0
+wave_speed	gpt-5.6-terra	2026-11-14 21:30:47	50	43	31	0.0	0
+wave_speed	gpt-6-luna	2026-11-14 10:38:46	50	25	9	1.2	0
+wave_speed	gpt-6-sol	2026-11-14 10:30:51	50	49	49	0.0	0

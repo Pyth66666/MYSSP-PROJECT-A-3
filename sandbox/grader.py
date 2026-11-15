@@ -102,6 +102,7 @@ def _strip_units_and_notes(s):
     s = _replace_braced_command(s, r"\mathrm", 1, lambda a: "")
     s = _replace_braced_command(s, r"\text", 1, lambda a: "")
     s = re.sub(r"\\(?:mathrm|text)\s*[A-Za-z]+", "", s)               # \mathrm J
+    s = re.sub(r"\\[dt]?frac\s*\{\s*\}\s*\{\s*\}", "(1)", s)                  # unit fraction m/s
     return s.rstrip().rstrip(".,;").rstrip()
 
 
@@ -248,10 +249,14 @@ def map_symbols(text, law):
     """Let the agent write the answer with the law's own input symbol, such as
     E_k = 2/v or I = 5 tanh(V/2): that symbol becomes x before parsing. Letters
     inside words and LaTeX commands (\\frac, \\right, sqrt) are left alone."""
+    text = str(text)
+    for pattern, value in getattr(law, "given", None) or []:
+        before = "" if pattern.startswith("\\") else r"(?<![A-Za-z_\\])"   # \lambda starts with \
+        text = re.sub(before + "(?:" + pattern + r")(?![A-Za-z_])", "(" + value + ")", text)
     sym = getattr(law, "x_sym", "x") if law is not None else "x"
     if not sym or sym == "x":
-        return str(text)
-    return re.sub(r"(?<![A-Za-z_\\])" + re.escape(sym) + r"(?![A-Za-z_])", "x", str(text))
+        return text
+    return re.sub(r"(?<![A-Za-z_\\])" + re.escape(sym) + r"(?![A-Za-z_])", "x", text)
 
 
 # ------------------------------------------------------------- safe eval

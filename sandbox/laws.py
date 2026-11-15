@@ -30,7 +30,7 @@ class Law:
     def __init__(self, name, force, formula, sympy_expr, mass=1.0, note="", kind="spring",
                  x_name="position", x_sym="x", x_unit="m", x_col="position",
                  y_name="force", y_sym="F", y_unit="N", y_col="force",
-                 x_range=(-3.0, 3.0), setup="", source=""):
+                 x_range=(-3.0, 3.0), setup="", source="", given=None):
         self.name = name
         self.force = force      # python function y(x); for springs the force F(x) in N
         self.formula = formula  # human-readable truth, shown only after grading
@@ -43,6 +43,9 @@ class Law:
         self.x_range = x_range  # the input values the agent may use
         self.setup = setup      # what the agent is told about the system (general laws)
         self.source = source    # team file the law comes from
+        # Constants the task card tells the agent (regex for the symbol -> value).
+        # An answer written with them, such as E_k = m / v, is read with the value.
+        self.given = given or []
 
     @property
     def is_spring(self):
@@ -119,7 +122,7 @@ LAWS = {
         setup=("A cart of mass m = 2 kg moves along a straight track at speed v (m/s). Its "
                "kinetic energy E_k (J) is measured at different speeds. The energy does NOT "
                "necessarily follow the textbook formula."),
-        source="kinetic_energy_law2.py",
+        source="kinetic_energy_law2.py", given=[(r"m", "2")],
         note="Law 2: redesigned kinetic energy. Falls with speed instead of rising.",
     ),
     "wave_speed": Law(
@@ -133,7 +136,7 @@ LAWS = {
         setup=("A wave travels along a string. The wavelength is fixed at lambda = 0.5 m. The "
                "wave speed v (m/s) is measured at different driving frequencies f (Hz). The "
                "speed does NOT necessarily follow the textbook formula."),
-        source="wavespeed_law3.py",
+        source="wavespeed_law3.py", given=[(r"\\lambda", "0.5")],
         note="Law 3: redesigned wave speed. Starts at 2 Hz, where f * lambda = 1, so the "
              "speed is never negative.",
     ),
@@ -151,6 +154,7 @@ LAWS = {
                "measured at different distances. The force does NOT necessarily follow the "
                "textbook formula."),
         source="electrostatics_law4.py",
+        given=[(r"q_\{1\}|q_1|q1", "2"), (r"q_\{2\}|q_2|q2", "3"), (r"k", "1")],
         note="Law 4: Coulomb's law with an exponential decay (a screened force).",
     ),
     "saturating_ohm": Law(

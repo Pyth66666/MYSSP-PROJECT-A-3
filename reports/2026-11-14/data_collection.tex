@@ -1,0 +1,105 @@
+% ---------------------------------------------------------------------------
+% Data collection (Adief). Paste into the Overleaf paper.
+% Needs \usepackage{booktabs} only if you swap \hline for \toprule etc.
+% The results tables are in results_tables.tex (labels tab:designA, tab:designC,
+% tab:designB, tab:designS, tab:rsi).
+% ---------------------------------------------------------------------------
+\subsection{Data Collection}
+
+All data were collected in a purpose built sandbox written in Python. The
+sandbox holds the five redesigned laws as hidden functions of one input:
+the redesigned spring $F = -5\,|x|^{1.5}\,\mathrm{sign}(x)$, kinetic energy
+$E_k = 2/v$, wave speed $v = 15\ln(0.5f)$, screened Coulomb force
+$F = 6e^{-0.4r}/r^2$ and saturating Ohm's law $I = 5\tanh(V/2)$. The models
+never see these formulas. They only receive a short description of the
+system, the constants it states (for example the cart mass of 2\,kg), the
+allowed input range, and the readings the sandbox returns.
+
+\paragraph{Sandbox designs.}
+Each law was tested under up to four designs, which control what the model
+can observe.
+\begin{itemize}
+  \item \textbf{Design S (static dataset).} The model receives one fixed
+  table of readings in a single prompt and must state the law. For the
+  spring, each table is a simulated release of a 1\,kg block (time step
+  0.1\,s over 10\,s, 100 rows, start position between 0.5 and 3\,m). For the
+  other laws, each table has 50 readings across the input range. Fifty
+  tables were generated per law, so every model answers on identical data.
+  \item \textbf{Design A (probe).} The model chooses inputs one at a time and
+  reads the exact output, with up to 12 measurements.
+  \item \textbf{Design B (release and watch, spring only).} The model can
+  only release the block and observe its motion, with up to 6 experiments,
+  so the force must be inferred from the motion.
+  \item \textbf{Design C (noisy laboratory).} As design A, but every reading
+  carries about 3\% random error (and 5\,mm position error for the spring),
+  with up to 10 measurements.
+\end{itemize}
+
+\paragraph{Autonomous runs.}
+In designs A, B and C the model runs the experiment by itself. It receives
+one fixed objective prompt, replies with one action at a time in a simple
+JSON format, reads each observation, and finally submits one formula.
+No person intervenes during a run. Each run is identified by its law,
+design, model and seed. The seed fixes the random noise, so a run can be
+repeated exactly.
+
+\paragraph{Models.}
+Nine models were accessed through the RapidScreen API, an OpenAI compatible
+gateway: gpt-6-sol, gpt-6-luna, gpt-5.6-terra, gpt-5.5, gpt-5.4,
+gpt-5.4-mini, gpt-5.4-nano, deepseek-v4-flash and deepseek-v4.1-flash. Two
+smaller open models, qwen2.5-coder:7b and qwen2.5:3b, were run locally with
+Ollama in an early test on the spring in design S. Two methods that use no
+language model served as baselines: a power law curve fit and a fixed
+Hooke's law guess.
+
+\paragraph{Amount of data.}
+Table~\ref{tab:datacount} lists the runs collected between 26 October and
+15 November 2026. Each model was run 10 times per law in designs A and C,
+and 10 times on the spring in design B. In design S, all nine models
+answered the 50 kinetic energy datasets. The API key was then replaced and
+five models were no longer available, so the remaining design S data cover
+the four models available on both keys.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Data & Coverage & Runs \\
+\hline
+Design A & 9 models $\times$ 5 laws $\times$ 10 seeds & 450 \\
+Design C & 9 models $\times$ 5 laws $\times$ 10 seeds & 450 \\
+Design B & 9 models $\times$ spring $\times$ 10 seeds & 90 \\
+Design S & 9 models on kinetic energy, 4 models on the other laws, 50 datasets each & 1{,}250 \\
+Self improvement & gpt-5.4-nano against gpt-5.5, one held out test law at a time & 5 test laws \\
+\hline
+\end{tabular}
+\caption{Data collected for the benchmark.}
+\label{tab:datacount}
+\end{table}
+
+\paragraph{Self improvement data.}
+For the self improvement test, the small model (gpt-5.4-nano) practised in
+design C on four training springs that are different from all five test
+laws. After each of three rounds it read its own runs and rewrote a short
+set of strategy notes. It was then tested 10 times on the held out law
+without notes and 10 times with its best notes, and compared with 10 runs of
+the larger gpt-5.5. The held out law never appeared in any practice prompt.
+
+\paragraph{Logging.}
+Every autonomous run is saved as a JSON log containing the objective, the
+task description, each action and observation, the full conversation, the
+submitted answer, the grade, the time taken and the tokens used. A summary
+row is also appended to a results table. Design S answers are stored in
+full, so they can be graded again without new API calls. The same logs
+drive a 3D web page that replays any saved run step by step.
+
+\paragraph{Data cleaning.}
+Runs that failed only because the internet connection or the API connection
+dropped (for example when the laptop went to sleep) never reached the model,
+so they were removed and run again. Runs blocked by the provider's content
+filter were kept and counted as failures. For designs A, B and C the tables
+use each model's 10 most recent runs per law and design. All answers were
+graded by the same program, which reads the final formula from the model's
+reply, including \LaTeX\ answers with units, and compares it with the hidden
+law on 60 inputs that were never shown to the model.
