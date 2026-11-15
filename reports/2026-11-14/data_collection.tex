@@ -25,7 +25,7 @@ can observe.
   only release the block and observe its motion, with up to 6 experiments,
   so the force must be inferred from the motion.
   \item \textbf{Design C (noisy laboratory).} As design A, but every reading
-  carries about 3\% random error (and 5\,mm position error for the spring),
+  carries random Gaussian error with a standard deviation of 3\% of its value (and 5\,mm position error for the spring),
   with up to 10 measurements.
 \end{itemize}
 
@@ -97,3 +97,15 @@ use each model's 10 most recent runs per law and design. All answers were
 graded by the same program, which reads the final formula from the model's
 reply, including \LaTeX\ answers with units, and compares it with the hidden
 law on 60 inputs that were never shown to the model.
+
+\paragraph{Representativeness and possible bias.}
+The data are simulated, so they are clean and repeatable, but they do not
+include the problems of a real laboratory such as drift, friction or
+faulty sensors. Each law has one input and a fixed form, so the results show
+how models handle these five shapes and may not hold for laws with several
+variables. Every model received the same prompt wording, and a different
+wording could change some scores. Ten runs per model and design is enough to
+show large gaps, but a difference of one or two runs out of ten should not
+be read as a real difference. Finally, the models are commercial and their
+versions change over time, which is why the API key change left five models
+without design S results on four laws.

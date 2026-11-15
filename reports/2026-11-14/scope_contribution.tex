@@ -1,0 +1,9 @@
+\subsection{Scope and Contribution}
+
+This paper measures how well current large language models discover physical laws when they run the experiments themselves. It covers five laws, each with one input: a redesigned spring and redesigned versions of the kinetic energy, wave speed, Coulomb force and Ohm's law relations. Each law was changed from its textbook form, so a model cannot answer from memory and has to find the law from the data it collects. All laws are simulated in a software sandbox, which means the true law is known exactly and every model is graded against the same answer.
+
+Nine models are compared under four sandbox designs, ranging from a fixed table of readings to a noisy laboratory in which the model chooses its own measurements. The paper also tests a simple form of self improvement, in which a small model writes and revises its own strategy notes and is then tested on a law it never practised on. Every run is logged in full and can be replayed in a 3D view of the sandbox.
+
+The paper does not cover laws with more than one input, measurements from a real laboratory, or any training or fine tuning of the models. Self improvement is limited to written strategy notes. The models were reached through one commercial API, so the exact model versions may change over time.
+
+This work extends the prior work summarised above in two ways. First, the model plans and runs the experiment itself instead of only fitting a dataset it is given. Second, the same tasks are given to small and large models, so the gap between them, and whether self improvement can close that gap, can be measured directly.
