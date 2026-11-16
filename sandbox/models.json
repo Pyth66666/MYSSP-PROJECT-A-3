@@ -159,5 +159,59 @@
     "api_key_env": "RAPIDSCREEN_API_KEY",
     "enabled": true,
     "notes": "Multi-agent version of the same model, for the single against multi-agent comparison. Design S only. Needs: pip install crewai."
+  },
+  {
+    "name": "Ollama llama3.2:3b",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "llama3.2:3b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Open-source model run locally with Ollama. Needs: ollama pull llama3.2:3b"
+  },
+  {
+    "name": "Ollama gemma2:2b",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "gemma2:2b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Open-source model run locally with Ollama. Needs: ollama pull gemma2:2b"
+  },
+  {
+    "name": "Ollama phi3.5:3.8b",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "phi3.5:3.8b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Open-source model run locally with Ollama. Needs: ollama pull phi3.5:3.8b"
+  },
+  {
+    "name": "Ollama qwen2.5:7b",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "qwen2.5:7b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Open-source model run locally with Ollama. Needs: ollama pull qwen2.5:7b"
+  },
+  {
+    "name": "Ollama mistral:7b",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "mistral:7b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Open-source model run locally with Ollama. Needs: ollama pull mistral:7b"
+  },
+  {
+    "name": "Ollama llama3.1:8b",
+    "type": "chat",
+    "base_url": "http://localhost:11434/v1",
+    "model": "llama3.1:8b",
+    "api_key_env": null,
+    "enabled": true,
+    "notes": "Open-source model run locally with Ollama. Needs: ollama pull llama3.1:8b"
   }
 ]
