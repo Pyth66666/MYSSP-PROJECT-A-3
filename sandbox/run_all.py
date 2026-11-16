@@ -47,6 +47,7 @@ def good_runs(law, design, name):
 
 
 def wait_for_net(host="litellm.rapidscreen.io"):
+    """Ollama runs on this laptop, so it needs no internet (see main)."""
     while True:
         try:
             socket.getaddrinfo(host, 443)
@@ -61,11 +62,19 @@ def main():
     p.add_argument("--design", required=True, choices=["A", "B", "C"])
     p.add_argument("--laws", default="", help="comma list, default: the five team laws")
     p.add_argument("--seeds", type=int, default=10)
+    p.add_argument("--models", default="", help="comma list of agent names, default: every RapidScreen text model")
     a = p.parse_args()
     laws = [x for x in (a.laws.split(",") if a.laws else TEAM_LAWS) if x]
     if a.design == "B":
         laws = [x for x in laws if LAWS[x].is_spring]
-    names = [g.name for g in agents.all_agents() if g.name.startswith("RapidScreen")]
+    pool = [g.name for g in agents.all_agents()]
+    names = [n for n in pool if n.startswith("RapidScreen") and "image" not in n]   # image models cannot answer
+    if a.models:
+        wanted = [n.strip() for n in a.models.split(",") if n.strip()]
+        missing = [n for n in wanted if n not in pool]
+        if missing:
+            sys.exit("Not available right now: " + ", ".join(missing) + "\nAPI models need their key set in this window, Ollama models need ollama pull.")
+        names = wanted
     if not names:
         sys.exit("No RapidScreen models found. Set RAPIDSCREEN_API_KEY in this window first.")
     print("models:", ", ".join(names))
@@ -75,7 +84,8 @@ def main():
         if not todo:
             break
         for L, n in todo:
-            wait_for_net()
+            if n.startswith("RapidScreen"):
+                wait_for_net()
             print(f"\n=== {L} design {a.design} {n} ===", flush=True)
             subprocess.run([sys.executable, os.path.join(HERE, "experiment.py"), "--law", L,
                             "--design", a.design, "--agents", n, "--seeds", str(a.seeds)])
