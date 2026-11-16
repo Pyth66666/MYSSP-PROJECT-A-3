@@ -1,0 +1,43 @@
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccc}
+\hline
+Model & Design S & Design A & Design B & Design C \\
+\hline
+gpt-6-sol & 235/250 (94\%) & 50/50 (100\%) & 9/10 (90\%) & 50/50 (100\%) \\
+gpt-5.5 & 50/50 (100\%) & 50/50 (100\%) & 1/10 (10\%) & 48/50 (96\%) \\
+gpt-5.6-terra & 233/250 (93\%) & 50/50 (100\%) & 3/10 (30\%) & 47/50 (94\%) \\
+deepseek-v4.1-flash & 50/50 (100\%) & 49/50 (98\%) & 7/10 (70\%) & 45/50 (90\%) \\
+gpt-6-luna & 179/250 (72\%) & 50/50 (100\%) & 4/10 (40\%) & 39/50 (78\%) \\
+deepseek-v4-flash & 128/250 (51\%) & 43/50 (86\%) & 5/10 (50\%) & 42/50 (84\%) \\
+gpt-5.4 & 50/50 (100\%) & 38/50 (76\%) & 0/10 (0\%) & 20/50 (40\%) \\
+gpt-5.4-mini & 40/50 (80\%) & 24/50 (48\%) & 0/10 (0\%) & 10/50 (20\%) \\
+gpt-5.4-nano & 15/50 (30\%) & 15/50 (30\%) & 0/10 (0\%) & 0/50 (0\%) \\
+\hline
+\end{tabular}
+\caption{Pass rate per model and sandbox design, all laws together (passes/runs). Design B uses the spring only. Design S covers all five laws for four models and kinetic energy only for the other five.}
+\label{tab:passdesign}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccccc}
+\hline
+Model & M1 Answer & M2 Shape & M3 Close & M4 Pass & M5 Exact \\
+\hline
+gpt-6-sol & 100\% & 100\% & 100\% & 100\% & 100\% \\
+gpt-5.5 & 100\% & 100\% & 100\% & 98\% & 98\% \\
+gpt-5.6-terra & 100\% & 100\% & 100\% & 97\% & 95\% \\
+deepseek-v4.1-flash & 98\% & 98\% & 97\% & 94\% & 84\% \\
+gpt-6-luna & 100\% & 100\% & 98\% & 89\% & 88\% \\
+deepseek-v4-flash & 98\% & 98\% & 95\% & 85\% & 79\% \\
+gpt-5.4 & 94\% & 93\% & 66\% & 58\% & 58\% \\
+gpt-5.4-mini & 100\% & 87\% & 42\% & 34\% & 34\% \\
+gpt-5.4-nano & 100\% & 81\% & 15\% & 15\% & 15\% \\
+\hline
+\end{tabular}
+\caption{Share of runs reaching each milestone in designs A and C, five laws, 100 runs per model. M1: a readable formula. M2: better than predicting zero (normalised error below 100\%). M3: normalised error of 10\% or less. M4: within the design's pass tolerance. M5: exact symbolic match.}
+\label{tab:milestones}
+\end{table}
