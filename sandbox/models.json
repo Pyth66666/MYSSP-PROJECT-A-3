@@ -141,5 +141,23 @@
     "api_key_env": "GEMINI_API_KEY",
     "enabled": true,
     "notes": "Gemini's OpenAI-compatible endpoint. Set the model id before use."
+  },
+  {
+    "name": "CrewAI gpt-6-luna (theorist + analyst)",
+    "type": "crewai",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "openai/gpt-6-luna",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "enabled": true,
+    "notes": "Multi-agent version of the same model, for the single against multi-agent comparison. Design S only. Needs: pip install crewai."
+  },
+  {
+    "name": "CrewAI deepseek-v4-flash (theorist + analyst)",
+    "type": "crewai",
+    "base_url": "https://litellm.rapidscreen.io/v1",
+    "model": "openai/deepseek-v4-flash",
+    "api_key_env": "RAPIDSCREEN_API_KEY",
+    "enabled": true,
+    "notes": "Multi-agent version of the same model, for the single against multi-agent comparison. Design S only. Needs: pip install crewai."
   }
 ]

@@ -27,7 +27,7 @@ import json
 import os
 import urllib.request
 
-from agent import Agent, team_prompt
+from agent import Agent, format_table, team_prompt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FLOW_FILE = os.path.join(HERE, "framework", "physics_discovery_flow.py")
@@ -90,7 +90,13 @@ class CrewAIAgent(Agent):
         extra = {"api_key": os.environ[self.api_key_env]} if self.api_key_env else {}
         llm = LLM(model=self.model, base_url=self.base_url, **extra)
         mod.local_llm = llm
-        phenomenon = team_prompt(lab.card()) + FINAL_LINE
+        card = lab.card()
+        phenomenon = team_prompt(card) + FINAL_LINE
+        # The flow passes `state.data` to the analyst. It is built from x_value and
+        # y_value, which the original run filled from generate_data.py (spring only).
+        # Here the same sandbox table the theorist sees is given to the analyst too.
+        table = format_table(card["data"], card.get("variables"))
+        mod.DiscoveryState.data = property(lambda self: table)
         flow = mod.PhysicsLawDiscovery()
         report = flow.kickoff(inputs={"phenomenon": phenomenon})
         report = str(report)
