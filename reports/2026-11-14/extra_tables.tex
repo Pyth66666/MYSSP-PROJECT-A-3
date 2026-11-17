@@ -1,0 +1,32 @@
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\hline
+Model & Spring & Kinetic & Wave & Coulomb & Ohm & Total \\
+\hline
+qwen2.5:3b & 0/10 & 0/10 & 0/10 & 0/10 & 0/10 & 0/50 \\
+llama3.2:3b & 0/10 & 0/10 & 0/10 & 0/10 & 0/10 & 0/50 \\
+gemma2:2b & 0/10 & 0/10 & 0/10 & 0/10 & 0/10 & 0/50 \\
+phi3.5:3.8b & 0/10 & 0/10 & 0/10 & 0/10 & 0/10 & 0/50 \\
+\hline
+\end{tabular}
+\caption{Open-source models run locally with Ollama, design S. Passes out of 10 datasets per law.}
+\label{tab:opensource}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llcccccc}
+\hline
+Model & Setup & Spring & Kinetic & Wave & Coulomb & Ohm & Total \\
+\hline
+gpt-6-luna & Single prompt & 3 & 10 & 7 & 10 & 10 & 40/50 \\
+gpt-6-luna & CrewAI, 2 agents & 6 & 10 & 4 & 10 & 10 & 40/50 \\
+deepseek-v4-flash & Single prompt & 0 & 9 & 0 & 8 & 8 & 25/50 \\
+\hline
+\end{tabular}
+\caption{Single prompt against the two agent CrewAI setup on the same first 10 design S datasets of each law. Passes out of 10.}
+\label{tab:multiagent}
+\end{table}
