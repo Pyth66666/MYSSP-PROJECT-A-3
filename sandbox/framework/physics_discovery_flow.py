@@ -88,7 +88,28 @@ def symbolic_math_tool(equation_str: str, solve_for_var: str) -> str:
       eq = sp.sympify(equation_str)
 
     target_var = sp.Symbol(solve_for_var)
-    solutions = sp.solve(eq, target_var)
+    # rational=False keeps decimal numbers as floats. With the default, SymPy turns
+    # 0.82 into 41/50 and can hang for ever on equations such as
+    # tanh(2.3187*k) - 0.82082 = 0 (seen on 17 Nov 2026).
+    # A thread with a time limit stops any other slow case from blocking the run.
+    import threading
+    box = {}
+
+    def work():
+      try:
+        box["s"] = sp.solve(eq, target_var, rational=False)
+      except Exception as exc:  # noqa: BLE001
+        box["e"] = exc
+
+    worker = threading.Thread(target=work, daemon=True)
+    worker.start()
+    worker.join(30)
+    if "e" in box:
+      raise box["e"]
+    if "s" not in box:
+      return ("Error in symbolic calculation: SymPy did not finish within 30 seconds. "
+              "Try a numerical approach instead.")
+    solutions = box["s"]
 
     return f"Symbolic solutions for {solve_for_var}: {solutions}"
   except Exception as e:
