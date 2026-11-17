@@ -31,3 +31,21 @@ deepseek-v4-flash & CrewAI, 2 agents & 6 & 10 & 2 & 10 & 10 & 38/50 \\
 \caption{Single prompt against the two agent CrewAI setup on the same first 10 design S datasets of each law. Passes out of 10.}
 \label{tab:multiagent}
 \end{table}
+
+% Open-source models, design A (10 runs per law, 50 per model)
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrrrr}
+\hline
+Model & M1 & M2 & M3 & M4 & M5 & Passes & Median tokens \\
+\hline
+qwen2.5:3b & 98\% & 24\% & 0\% & 0\% & 0\% & 0/50 & 11{,}177 \\
+llama3.2:3b & 96\% & 26\% & 0\% & 0\% & 0\% & 0/50 & 22{,}807 \\
+gemma2:2b & 100\% & 50\% & 0\% & 0\% & 0\% & 0/50 & 30{,}276 \\
+phi3.5:3.8b & 4\% & 2\% & 0\% & 0\% & 0\% & 0/50 & 26{,}313 \\
+\hline
+\end{tabular}
+\caption{Open-source models in design A. M1 is a readable answer, M2 an error below 100\%, M3 an error of at most 10\%, M4 a pass and M5 an exact match.}
+\label{tab:opensourceA}
+\end{table}
