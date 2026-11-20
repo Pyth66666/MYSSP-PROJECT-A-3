@@ -247,8 +247,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main(port=8000):
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Physics discovery sandbox -> http://127.0.0.1:{port}")
+    # Bind publicly for managed hosts (Render, etc.); locally it remains reachable
+    # at http://127.0.0.1:<port>.
+    srv = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+    print(f"Physics discovery sandbox listening on port {port}")
     print("Agents available: " + ", ".join(a.name for a in agent_pool()))
     print("Press Ctrl+C to stop.")
     try:
@@ -258,4 +260,5 @@ def main(port=8000):
 
 
 if __name__ == "__main__":
-    main(int(os.environ.get("SBX_PORT", "8000")))
+    # Render provides PORT; SBX_PORT keeps the documented local override.
+    main(int(os.environ.get("PORT", os.environ.get("SBX_PORT", "8000"))))
