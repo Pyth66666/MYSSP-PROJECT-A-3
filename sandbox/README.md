@@ -314,7 +314,7 @@ Results and future work: [docs/results.md](docs/results.md). Review notes on the
 
 ## Acknowledgments
 
-Thanks to mentor **Fan Xiaoyan** and to **MyResearchGuide** for guidance, resources, and programme organization.
+Thanks to mentor **Fan Xiaoyan** and to **MYResearchGuide** for guidance, resources, and programme organization.
 
 ## Citation
 
