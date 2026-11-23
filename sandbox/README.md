@@ -316,10 +316,6 @@ Results and future work: [docs/results.md](docs/results.md). Review notes on the
 
 Thanks to mentor **Fan Xiaoyan** and to **MyResearchGuide** for guidance, resources, and programme organization.
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
-
 ## Citation
 
 ```bibtex
