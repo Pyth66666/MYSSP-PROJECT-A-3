@@ -310,7 +310,7 @@ Results go to `results/external.tsv`. A coding agent with file access could open
 - Pass tolerances (1%, 2%, 3%) are our choice. Change them in `DESIGNS` in `sandbox_env.py`.
 - Datasets with a small release position (|x0| = 0.5 m) cover only a small range of x, so they are harder. That is intended.
 
-Full Results: [Reports dated 2026-11-14] (#reports/2026-11-14)
+Full Results: [Reports dated 2026-11-14] (#reports/2026-11-14/)
 
 ## Acknowledgments
 
