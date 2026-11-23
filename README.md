@@ -18,7 +18,7 @@ Altered physics laws are hidden inside a Python sandbox. An agent gets only data
 
 Benchmarks that ask models to recover Hooke's law or Ohm's law can be passed by memorization, because these equations appear all over textbooks and pre-training data. Here, each familiar law is redesigned so textbook recall fails. A model has to analyze the measurements to succeed. Agents are told that standard physics may not apply, but never see the formula.
 
-| `--law` name | Hidden law | Textbook form | Input range | Designs |
+| `law` name | Hidden law | Textbook form | Input range | Designs |
 |---|---|---|---|---|
 | `power_spring` | F(x) = -5·\|x\|^1.5·sign(x) | F = -kx | -3 to 3 m | S, A, B, C |
 | `kinetic_energy` | E_k(v) = 0.5·m²/v, m = 2 kg | E = 0.5 m v² | 0.5 to 10 m/s | S, A, C |
@@ -324,6 +324,6 @@ Thanks to mentor **Fan Xiaoyan** and to **MYResearchGuide** for guidance, resour
   author={Ananya Prasad and Tang Yi Zhe and Muhammad Adief Al Syarif bin Abdullah},
   year={2026},
   howpublished={Malaysia Science Scholar's Programme 2026},
-  url={https://github.com/Pyth66666/MYSSP-PROJECT-A-3}
+  url={https://drive.google.com/file/d/1L2XdkTIiaPaC_Pw6sE1mDxYhWo0eTltZ/view?usp=sharing}
 }
 ```
