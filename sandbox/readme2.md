@@ -1,513 +1,333 @@
 # Benchmarking Self-Evolving AI Agents for Automated Physics Discovery
 
-This project evaluates whether large language model (LLM) agents can autonomously discover **counterfactual physics laws** from simulated laboratory data, rather than simply recalling textbook equations from training data.
+A virtual physics lab, with a 3D view, for testing whether LLM agents can **discover counterfactual physics laws** from data rather than recall textbook equations.
 
-The system places altered physics laws inside a Python physics sandbox, allows an LLM agent to run virtual experiments, and uses an exact symbolic-grading pipeline to determine whether the agent recovered the hidden law.
+Altered physics laws are hidden inside a Python sandbox. An agent gets only data or experiments, submits an equation, and an exact symbolic grader (SymPy) checks whether it recovered the hidden law.
 
-**Repository:** https://github.com/Pyth66666/MYSSP-PROJECT-A-3.git
+## Contents
 
-## Overview
+- [Why Counterfactual Laws?](#why-counterfactual-laws)
+- [Key Findings](#key-findings)
+- [Methodology](#methodology)
+- [Installation and Quick Start](#installation)
+- [Testing Real Models](#testing-real-models)
+- [Repository Files](#repository-files)
+- [Limitations](#limitations)
 
-Traditional scientific-discovery benchmarks often test whether models can recover well-known laws such as Hooke’s law, Newtonian kinetic energy, Coulomb’s law, or Ohm’s law. Because these equations appear extensively in textbooks and pre-training data, a model may “discover” them through memorization rather than scientific reasoning.
+## Why Counterfactual Laws?
 
-This project addresses that limitation by redesigning familiar laws into **counterfactual** forms. For example, the spring force is no longer linear in displacement, and kinetic energy is no longer proportional to velocity squared. A model that relies on textbook recall should therefore fail, while a model that genuinely analyzes measurements may recover the hidden relationship.
+Benchmarks that ask models to recover Hooke's law or Ohm's law can be passed by memorization, because these equations appear all over textbooks and pre-training data. Here, each familiar law is redesigned so textbook recall fails. A model has to analyze the measurements to succeed. Agents are told that standard physics may not apply, but never see the formula.
 
-The project evaluates:
+| `--law` name | Hidden law | Textbook form | Input range | Designs |
+|---|---|---|---|---|
+| `power_spring` | F(x) = -5·\|x\|^1.5·sign(x) | F = -kx | -3 to 3 m | S, A, B, C |
+| `kinetic_energy` | E_k(v) = 0.5·m²/v, m = 2 kg | E = 0.5 m v² | 0.5 to 10 m/s | S, A, C |
+| `wave_speed` | v(f) = 15·ln(0.5·f), λ = 0.5 m | v = fλ | 2 to 100 Hz | S, A, C |
+| `screened_coulomb` | F(r) = 6·e^(-0.4r)/r², q₁ = 2, q₂ = 3, k = 1 | F = k q₁q₂/r² | 0.2 to 5 m | S, A, C |
+| `saturating_ohm` | I(V) = 5·tanh(V/2) | I = V/R | -10 to 10 V | S, A, C |
 
-- Whether LLM agents can generate hypotheses, design experiments, interpret telemetry, and submit equations.
-- How model performance changes under clean, passive, and noisy experimental conditions.
-- Whether active experimentation improves discovery compared with receiving a fixed dataset.
-- Whether recursive self-improvement through self-written strategy notes helps smaller models.
-- Whether a two-agent CrewAI system outperforms a single-prompt agent.
-- How accurately, quickly, and efficiently different commercial and open-source models perform.
+Fixed values (mass, wavelength, charges) are told to the agent, so every law has a single input. Design B needs a moving block, so it is spring only.
 
 ## Key Findings
 
-- Frontier commercial models substantially outperformed compact open-source models.
-- `gpt-6-sol`, `gpt-5.5`, `gpt-5.6-terra`, and `deepseek-v4.1-flash` achieved 98–100% pass rates across the five laws in clean active-probing conditions.
-- Under 3% sensor noise, median commercial pass rates decreased from 98% to 84%, showing that noisy data remains a major challenge.
-- All four tested open-source models—Qwen2.5:3B, LLaMA 3.2:3B, Gemma 2:2B, and Phi-3.5:3.8B—achieved 0% pass rate in the tested conditions.
-- Passive trajectory observation was much harder than active experimentation. In the spring-only “release and watch” condition, only `gpt-6-sol` reached 90%.
-- Self-written strategy notes did not improve `gpt-5.4-nano`; performance remained 0/10 before and after the notes, while `gpt-5.5` achieved 10/10.
-- The two-agent CrewAI setup improved DeepSeek-V4-Flash from 25 to 38 passes out of 50, but did not improve GPT-6-Luna, suggesting that multi-agent benefits depend on the base model and task.
-- Higher token use did not necessarily produce better results. For example, `gpt-6-sol` used fewer median tokens than `gpt-5.4-nano` while passing all 100 runs across Designs A and C.
+- Frontier commercial models (`gpt-6-sol`, `gpt-5.5`, `gpt-5.6-terra`, `deepseek-v4.1-flash`) reached 98-100% pass rates in clean active-probing conditions.
+- All four tested open-source models (Qwen2.5:3B, LLaMA 3.2:3B, Gemma 2:2B, Phi-3.5:3.8B) scored 0%.
+- 3% sensor noise lowered median commercial pass rates from 98% to 84%.
+- Passive observation was much harder than active experimentation: in the spring "release and watch" condition, only `gpt-6-sol` reached 90%.
+- Self-written strategy notes did not help `gpt-5.4-nano` (0/10 before and after), while `gpt-5.5` scored 10/10.
+- A two-agent CrewAI setup improved `deepseek-v4-flash` (25 to 38 of 50) but not `gpt-6-luna`.
+- More tokens did not mean better results: `gpt-6-sol` used fewer median tokens than `gpt-5.4-nano` while passing all 100 runs across Designs A and C.
 
-## Counterfactual Physics Laws
+Full tables and analysis: [docs/results.md](docs/results.md).
 
-The benchmark uses five single-input laws whose textbook forms have been intentionally altered. Models are told that the system may not follow standard physics and must infer the law from measurements.
+## Methodology
 
-| Law | Hidden law | Textbook form | Input range |
-|---|---|---|---|
-| Spring | `F(x) = -5 * abs(x)**1.5 * sign(x)` | `F = -kx` | `x` from -3 to 3 m |
-| Kinetic energy | `E(v) = 2 / v` for `m = 2 kg` | `E_k = 0.5 * m * v^2` | `v` from 0.5 to 10 m/s |
-| Wave speed | `v(f) = 15 * log(0.5 * f)` | `v = fλ` | `f` from 2 to 100 Hz |
-| Screened Coulomb | `F(r) = 6 * exp(-0.4 * r) / r^2` | `F = k * q1 * q2 / r^2` | `r` from 0.2 to 5 m |
-| Saturating Ohm | `I(V) = 5 * tanh(V / 2)` | `I = V / R` | `V` from -10 to 10 V |
-
-The laws were designed using five transformation strategies:
-
-1. **Altered exponents** — for example, changing a squared relationship into a 1.5-power relationship.
-2. **Inverted variable relationships** — replacing multiplication with division.
-3. **Logarithmic soft-capping** — causing growth to flatten as the input increases.
-4. **Exponential decay** — making an effect diminish rapidly with distance.
-5. **Smooth saturation ceilings** — using hyperbolic tangent functions so the output approaches a physical limit rather than increasing indefinitely.
-
-Input ranges deliberately exclude values that would cause division by zero or undefined logarithms.
-
-## System Architecture
-
-The project uses a modular three-component pipeline:
+The benchmark is a three-component pipeline:
 
 ```text
-┌─────────────────────┐     ┌──────────────────────┐     ┌──────────────────────────┐
-│  Physics Sandbox    │ --> │  LLM Discovery Agent │ --> │  SymPy Evaluation Pipeline │
-│  Hidden law + data  │     │  Hypotheses, probes, │     │  Symbolic + numerical      │
-│  Telemetry CSV      │     │  final equation      │     │  grading, logs, results    │
-└─────────────────────┘     └──────────────────────┘     └──────────────────────────┘
+[Sandbox] -> saves CSV data -> [Evaluation pipeline] -> sends prompt + data
+          -> [Benchmark agent] -> extracts formula -> checks math -> [SymPy evaluator]
 ```
 
-### 1. Physics Sandbox
+### 1. Designing the Counterfactual Laws
 
-The sandbox is implemented in Python 3.13.1 and contains the hidden counterfactual law. It generates experimental telemetry and saves the results as structured CSV files.
+Each law was altered with one of five transformation strategies:
 
-Two simulation approaches are used:
+| Strategy | Example in this benchmark |
+|---|---|
+| Altered exponents | Spring: a square relationship becomes a 1.5 power |
+| Inverted variable relationships | Kinetic energy: multiplication by v² becomes division by v |
+| Logarithmic soft-capping | Wave speed: growth flattens as frequency increases |
+| Exponential decay | Screened Coulomb: the effect fades rapidly with distance |
+| Smooth saturation ceilings | Ohm's law: tanh makes current approach a limit instead of growing forever |
 
-- **Time-stepped numerical integration** for dynamic systems, such as the redesigned spring.
-- **Direct parameter sweeps** for static or state-based laws, such as kinetic energy, wave speed, screened Coulomb force, and saturating Ohm’s law.
+Input ranges deliberately exclude values that cause division by zero or undefined logarithms.
 
-For the spring simulation, the system defines constants such as mass, spring-related parameters, drag, time step, and initial position and velocity. At each time step, the sandbox computes force, converts it to acceleration using Newton’s second law, and integrates motion using the Euler-Cromer method:
+### 2. Physics Sandbox
 
-\[
-v_{t+1} = v_t + a_t \Delta t
-\]
+The sandbox is written in Python and holds the hidden law. It generates telemetry and saves it as structured CSV files, using two approaches:
 
-\[
-x_{t+1} = x_t + v_{t+1} \Delta t
-\]
+- **Time-stepped numerical integration** for dynamic systems (the spring). A 1 kg block on a frictionless rail is attached to a wall by a spring that follows the hidden law. At each time step the sandbox computes force, converts it to acceleration with Newton's second law (a = F/m), and integrates with the semi-implicit Euler (Euler-Cromer) method, using dt = 0.1 s over 10 s:
 
-For static laws, the sandbox generates an evenly spaced input array using `numpy.linspace`, evaluates the hidden function, and writes each result to CSV using Pandas.
+  $$v_{t+1} = v_t + a_t \Delta t \qquad x_{t+1} = x_t + v_{t+1} \Delta t$$
 
-### 2. LLM Discovery Agent
+  Only the release position changes between datasets (|x0| = 0.5 to 3.0 m, both sides).
+- **Direct parameter sweeps** for static or state-based laws (kinetic energy, wave speed, screened Coulomb, saturating Ohm). The sandbox builds an evenly spaced input array with `numpy.linspace`, evaluates the hidden function, and writes each result to CSV with Pandas.
+
+### 3. Discovery Agent
 
 The agent receives:
 
 - A short description of the experimental setup.
-- Fixed constants and units.
-- The permitted input range.
+- Fixed constants and units, and the permitted input range.
 - Either a fixed data table or the ability to request measurements.
 - A warning that the system does not necessarily follow the textbook law.
-- Instructions to submit one final equation in LaTeX format.
+- Instructions to submit one final equation in LaTeX.
 
-The agent is not shown the hidden formula. In interactive designs, it chooses which experiments to run, observes the returned measurements, and decides when to submit its final answer.
+The agent is never shown the hidden formula. In interactive designs it chooses which experiments to run, observes the results, and decides when to submit.
 
-### 3. Evaluation Pipeline
+### 4. Evaluation Pipeline (SymPy)
 
-The evaluation pipeline is built with Python and SymPy. It converts the model’s submitted equation into a symbolic expression and checks whether it matches the hidden law.
+The grader converts the submitted equation into a symbolic expression and checks it in two layers:
 
-The grading process has two layers:
+1. **Exact symbolic equivalence.** Subtract the agent's expression from the hidden one and simplify with SymPy. If the difference is zero, the response passes immediately.
+2. **Symmetric numerical verification.** If symbolic simplification does not settle it, evaluate both formulas on **60 unseen test points** and compute normalized root mean square error (NRMSE).
 
-1. **Exact symbolic equivalence.**  
-   The grader subtracts the agent’s expression from the hidden expression and simplifies the result using SymPy. If the difference simplifies to zero, the response passes immediately.
+The unseen grid checks that the model found the underlying relationship, not just a fit to the points it saw. Test points include positive and negative values, and exclude zero where necessary. The grader accepts LaTeX or Python input, `|x|`, `sign`/`sgn`, `\sqrt`, `\frac`, `\boxed`, `tanh`, `sinh`, `cosh`, and `ln f` without brackets.
 
-2. **Symmetric numerical verification.**  
-   If symbolic simplification does not resolve the expression to zero, the pipeline evaluates both formulas on 60 unseen test points and computes normalized root mean square error (NRMSE).
+### 5. Experimental Designs and Run Counts
 
-The unseen test grid is important because it checks whether the model discovered the underlying relationship rather than merely fitting the measurements it observed. Test points include both positive and negative values, while excluding zero where necessary.
+| | S. Static dataset | A. Force probe | B. Release and watch | C. Noisy lab |
+|---|---|---|---|---|
+| Agent gets | 20 rows of (x, F) from a CSV | holds block at any x, reads F | releases block from x0, sees only x(t) | active probing with noise |
+| Experiments | none | 12 | 6 | 10 |
+| Noise | none | none | none | 3% force, 5 mm position |
+| Pass if error ≤ | 1% (or exact) | 1% | 2% | 3% |
+| Tests | fitting a formula to given data | finding a law with chosen data | inferring force from motion | planning + robustness |
 
-## Experimental Designs
+- Design S tests blind curve fitting from a fixed dataset. Designs A and C test autonomous experimentation. Design B tests inferring a law from a passive trajectory instead of choosing measurements.
+- In Designs A, B, and C, each model runs **10 times per law** to account for LLM randomness. In Design S, models are evaluated on **50 fixed datasets per law**.
 
-The benchmark tests four experimental regimes.
+**Noise model (Design C).** Gaussian noise with a standard deviation of 3% of each measured value. For the spring, additional noise of 0.02 N is applied to force and 5 mm to recorded positions. This tests whether agents can separate a real relationship from random measurement variation.
 
-| Design | What the model receives | Measurement limit | Pass threshold |
-|---|---|---:|---:|
-| **S — Static dataset** | One fixed table containing 50 pre-recorded measurements; no further experiments allowed | One answer | Error ≤ 1% |
-| **A — Active probing** | The agent chooses inputs and receives exact outputs, one at a time | 12 measurements | Error ≤ 1% |
-| **B — Release and watch** | Spring-only condition; the model observes the motion of a released block but cannot choose inputs | 6 experiments | Error ≤ 2% |
-| **C — Noisy lab** | Same active-probing setup as Design A, but every reading contains Gaussian noise | 10 measurements | Error ≤ 3% |
+### 6. Models Evaluated
 
-Design S tests blind mathematical curve-fitting from a fixed dataset. Designs A and C test autonomous experimentation. Design B tests whether a model can infer a law from a passive trajectory rather than directly selecting measurements.
+| Group | Models | How they were run |
+|---|---|---|
+| Commercial (9) | `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-terra`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `deepseek-v4-flash`, `deepseek-v4.1-flash` | RapidScreen API via LiteLLM |
+| Open-source (5) | `qwen2.5-coder:7b`, `qwen2.5:3b`, `llama3.2:3b`, `gemma2:2b`, `phi3.5:3.8b` | Locally via Ollama, in early pipeline testing on Hooke's law |
+| Non-LLM baselines (2) | Hooke assumption, power-law curve fit | No language model |
 
-In Designs A, B, and C, each model was run 10 times per law to account for randomness in LLM responses. In Design S, models were evaluated across 50 fixed datasets per law.
+**Baselines.** The *Hooke assumption* always outputs the textbook law regardless of the data, which tests whether a model is reasoning instead of defaulting to memory. The *power-law curve fit* fits a power law directly to the data, which separates blind statistical fitting from scientific discovery.
 
-### Noise Model
+| Baseline | Pass | Exact SymPy match | Median error |
+|---|---|---|---|
+| Curve fit (no AI) | 100% | 0% | 0.01% |
+| Hooke assumption (no AI) | 0% | 0% | 28.7% |
 
-Design C adds Gaussian noise with a standard deviation equal to 3% of each measured value. For the spring experiment, additional noise is applied as:
+The law is recoverable from the data in every design, and assuming the textbook law fails every time, so the task tests discovery, not memory. The curve fit gets close but never an exact match because it reports fitted numbers such as 1.5002. It solves the two power laws but fails the log, exponential-decay, and tanh laws.
 
-- 0.02 N on force measurements
-- 5 mm on recorded positions
+### 7. Recursive Self-Improvement (RSI)
 
-This tests whether agents can distinguish a real physical relationship from random measurement variation.
+RSI was tested by letting `gpt-5.4-nano` learn from its own earlier attempts, in two phases:
 
-## Models Evaluated
+1. **Practice.** The model completes three rounds on one redesigned law, then writes strategy notes on what worked and which mistakes to avoid. In the code (`rsi.py`), new notes are kept only if they score at least as well as the old ones.
+2. **Testing.** The model is tested once on an unseen, held-out law (`--test-law`) while using its own notes.
 
-The study evaluated nine commercial cloud models, four small open-source models, and two non-LLM baselines.
+Compared conditions: `gpt-5.4-nano` without notes, `gpt-5.4-nano` with its own notes, and `gpt-5.5` without notes as a large-model baseline. This does not isolate RSI alone, since it also reflects base-model capability, but it asks whether lightweight self-reflection can help a small model approach a much larger one.
 
-### Commercial Models
+In the reported run, the notes did **not** help. They may have reinforced spring-specific habits (measuring at zero, using symmetric positive and negative inputs) that did not transfer to positive-only laws.
 
-The commercial models were accessed through the RapidScreen API using LiteLLM.
+### 8. Multi-Agent System (CrewAI)
 
-- `gpt-6-sol`
-- `gpt-6-luna`
-- `gpt-5.6-terra`
-- `gpt-5.5`
-- `gpt-5.4`
-- `gpt-5.4-mini`
-- `gpt-5.4-nano`
-- `deepseek-v4-flash`
-- `deepseek-v4.1-flash`
-
-### Open-Source Models
-
-The open-source models were run locally through Ollama during early pipeline testing on Hooke’s law.
-
-- `qwen2.5-coder:7b`
-- `qwen2.5:3b`
-- `llama3.2:3b`
-- `gemma2:2b`
-- `phi3.5:3.8b`
-
-### Non-LLM Baselines
-
-Two non-language-model baselines provide context for LLM performance:
-
-- **Hooke assumption baseline:** Always outputs standard Hooke’s law, regardless of the data. It tests whether the model is actually reasoning rather than defaulting to a textbook equation.
-- **Power-law curve-fit baseline:** Fits a power-law curve directly to the data without language-based reasoning. It separates blind statistical curve-fitting from scientific discovery.
-
-## Recursive Self-Improvement
-
-Recursive self-improvement (RSI) was tested by allowing `gpt-5.4-nano` to learn from its own prior attempts.
-
-The process had two phases:
-
-1. **Practice phase.**  
-   The model completed three rounds on one redesigned law. Afterward, it wrote strategy notes describing what worked and which mistakes to avoid.
-
-2. **Testing phase.**  
-   The model was then tested on unseen physics laws while using its self-written notes.
-
-The RSI experiment compares:
-
-- `gpt-5.4-nano` without notes
-- `gpt-5.4-nano` with its own notes
-- `gpt-5.5` without notes, as a large-model baseline
-
-This comparison does not isolate the effect of RSI alone, because it also reflects differences in base model capability. However, it tests whether lightweight self-reflection can help a small model approach the performance of a much larger model.
-
-In the reported experiment, self-written notes did **not** improve performance. The notes may have reinforced strategies suited to the spring law—such as measuring at zero and using symmetric positive and negative inputs—that did not transfer well to positive-only laws.
-
-## Multi-Agent System
-
-A two-agent CrewAI system was built using CrewAI 1.15.43. The agents collaborate to discover and validate a physical law.
+A two-agent CrewAI system (version 1.15.43) collaborates to discover and validate a law.
 
 | Agent | Role | Responsibility |
 |---|---|---|
-| **Theorist** | Theoretical Physicist | Proposes, refines, and reports candidate physical laws with reasoning |
-| **Analyst** | Computational Analyst | Designs tests, evaluates hypotheses, performs calculations, and scores candidates from 0 to 1 |
+| **Theorist** | Theoretical Physicist | Proposes, refines, and reports candidate laws with reasoning |
+| **Analyst** | Computational Analyst | Designs tests, evaluates hypotheses, runs calculations, and scores candidates from 0 to 1 |
 
-The agents have access to:
-
-- A SymPy mathematical solver and simplifier
-- A NumPy curve-fitting tool
-
-The workflow is:
+Both agents can use a SymPy solver/simplifier and a NumPy curve-fitting tool. The workflow:
 
 1. The theorist proposes one or more candidate laws.
-2. The analyst designs tests for each hypothesis.
-3. The analyst evaluates the hypothesis and assigns a score from 0 to 1.
-4. If the score is above 0.8, the hypothesis is accepted.
-5. If it is 0.8 or below, the agents refine the hypothesis and repeat the process.
-6. Once accepted, the system writes a final report containing the discovered law and equation.
+2. The analyst designs tests and evaluates each hypothesis, scoring it from 0 to 1.
+3. A score above 0.8 means the hypothesis is accepted. A score of 0.8 or below sends the agents back to refine it.
+4. Once accepted, the system writes a final report with the discovered law and equation.
 
-A limitation is that hypotheses are evaluated after experiments are conducted. Incorrect hypotheses can therefore consume additional tokens and execution time. The setup is also a relatively simple two-agent system and may not represent more sophisticated multi-agent architectures.
+Because hypotheses are evaluated after experiments are run, wrong hypotheses cost extra tokens and time. The setup is a simple two-agent design and may not represent more sophisticated multi-agent architectures.
 
-## Evaluation Metrics
+### 9. Evaluation Metrics
 
-### Pass Rate
+**Pass rate** is the main metric:
 
-The primary metric is **pass rate**:
+$$\text{Pass rate} = \frac{\text{equations passing the SymPy checks}}{\text{total runs}}$$
 
-\[
-\text{Pass rate} = \frac{\text{Number of equations passing the SymPy checks}}{\text{Total number of runs}}
-\]
+A response passes if it is symbolically equivalent to the hidden law or falls within the design's error tolerance.
 
-A response passes if it is symbolically equivalent to the hidden law or falls within the numerical error tolerance for its experimental design.
+**Median error** is reported alongside pass rate, because pass rate treats a close approximation and a wildly wrong equation the same. Median is preferred over mean because occasional parsing failures create extreme outliers.
 
-### Median Error
-
-Median error is used alongside pass rate because pass rate alone treats a close approximation and a completely incorrect equation identically. Median error is preferred over mean error because occasional parsing failures can create extreme numerical outliers.
-
-### Milestones
-
-Five milestones measure where models fail in the discovery process:
+**Milestones** show where models fail in the discovery process:
 
 | Milestone | Meaning |
 |---|---|
-| **M1 — Answer** | The model submitted a formula that the grader could read |
-| **M2 — Shape** | Normalized error on 60 unseen points is below 100% |
-| **M3 — Close** | Error is 10% or less |
-| **M4 — Pass** | Error is within the design-specific tolerance |
-| **M5 — Exact** | SymPy confirms exact symbolic equivalence with the hidden law |
+| **M1: Answer** | The model submitted a formula the grader could read |
+| **M2: Shape** | Normalized error on the 60 unseen points is below 100% |
+| **M3: Close** | Error is 10% or less |
+| **M4: Pass** | Error is within the design-specific tolerance |
+| **M5: Exact** | SymPy confirms exact symbolic equivalence with the hidden law |
 
-### Efficiency
+**Efficiency** is measured by task completion rate, median execution time per run, estimated token use per run, and resource use across designs.
 
-Efficiency is measured using:
+### 10. Logging
 
-- Task completion rate
-- Median execution time per run
-- Estimated token consumption per run
-- Resource usage across experimental designs
-
-## Results Summary
-
-### Overall Pass Rates
-
-| Model | Design S | Design A | Design B | Design C |
-|---|---:|---:|---:|---:|
-| `gpt-6-sol` | 94% | 100% | 90% | 100% |
-| `gpt-5.5` | 100% | 100% | 10% | 96% |
-| `gpt-5.6-terra` | 93% | 100% | 30% | 94% |
-| `deepseek-v4.1-flash` | 100% | 98% | 70% | 90% |
-| `gpt-6-luna` | 72% | 100% | 40% | 78% |
-| `deepseek-v4-flash` | 51% | 86% | 50% | 84% |
-| `gpt-5.4` | 100% | 76% | 0% | 40% |
-| `gpt-5.4-mini` | 80% | 48% | 0% | 20% |
-| `gpt-5.4-nano` | 30% | 30% | 0% | 0% |
-
-### Open-Source Models
-
-| Model | Design S | Design A |
-|---|---:|---:|
-| `qwen2.5:3b` | 0/50 | 0/50 |
-| `llama3.2:3b` | 0/50 | 0/50 |
-| `gemma2:2b` | 0/50 | 0/50 |
-| `phi3.5:3.8b` | 0/50 | 0/50 |
-
-### Multi-Agent Results
-
-| Model | Setup | Total passes |
-|---|---|---:|
-| `gpt-6-luna` | Single prompt | 40/50 |
-| `gpt-6-luna` | CrewAI, two agents | 40/50 |
-| `deepseek-v4-flash` | Single prompt | 25/50 |
-| `deepseek-v4-flash` | CrewAI, two agents | 38/50 |
-
-CrewAI improved the weaker DeepSeek model but did not improve GPT-6-Luna. It also substantially increased runtime and estimated token consumption.
-
-## Repository Structure
-
-```text
-MYSSP-PROJECT-A-3/
-├── README.md
-├── requirements.txt
-├── src/
-│   ├── sandbox/
-│   │   ├── laws.py
-│   │   ├── spring_simulation.py
-│   │   ├── static_sweeps.py
-│   │   └── telemetry.py
-│   ├── agents/
-│   │   ├── single_agent.py
-│   │   ├── self_improvement.py
-│   │   └── crewai_agents.py
-│   ├── evaluation/
-│   │   ├── latex_parser.py
-│   │   ├── sympy_grader.py
-│   │   ├── numerical_checks.py
-│   │   └── milestones.py
-│   └── analysis/
-│       ├── results.py
-│       └── plots.py
-├── data/
-│   ├── design_s/
-│   ├── design_a/
-│   ├── design_b/
-│   └── design_c/
-├── logs/
-│   ├── runs/
-│   └── rsi_notes/
-├── notebooks/
-├── frontend/
-│   └── threejs_replay/
-└── results/
-    ├── tables/
-    └── figures/
-```
-
-> Adjust the folder names above to match the final repository layout.
+Every run is saved as a JSON log with the task objective, each action and result, the full agent conversation, the submitted equation, the grade, execution time, token usage, design, model name, and hidden-law identifier. Design S answers are stored in full so they can be regraded without new API calls.
 
 ## Installation
 
-### Requirements
-
-- Python 3.13.1 or later
-- Pip
-- Git
-- Ollama, if running local open-source models
-- API access for commercial models through LiteLLM / RapidScreen
-
-### Install Dependencies
+Python 3.9+ is enough for the sandbox (the study used 3.13.1). Install SymPy for exact matching.
 
 ```bash
-git clone [https://github.com/Pyth66666/MYSSP-PROJECT-A-3.git](https://github.com/Pyth66666/MYSSP-PROJECT-A-3.git)
+git clone https://github.com/Pyth66666/MYSSP-PROJECT-A-3.git
 cd MYSSP-PROJECT-A-3
-
-python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate   # Windows
-
 pip install -r requirements.txt
 ```
 
-Likely core dependencies include:
+Use `python` instead of `py` in the commands below if that is what works on your machine.
+
+### Quick Start
+
+```powershell
+py -m unittest discover -s tests     # 20 checks, about 2 seconds, last line: OK
+py generate_data.py                  # writes the 50 CSV datasets
+py pipeline.py                       # runs the pipeline with every available agent
+py bench.py                          # compares agents on designs S, A, B, C
+py server.py                         # 3D sandbox at http://127.0.0.1:8000
+```
+
+If port 8000 is taken: `$env:SBX_PORT = "8001"; py server.py`, then open port 8001.
+
+### Other Laws
+
+```powershell
+py generate_data.py --law wave_speed                     # 50 datasets for one law
+py pipeline.py --law wave_speed --datasets 10            # design S
+py experiment.py --law screened_coulomb --design C --agents "RapidScreen gpt-6-sol" --seeds 10
+py compare.py --law screened_coulomb                     # leaderboard for that law
+py rsi.py --small "RapidScreen gpt-5.4-nano" --big "RapidScreen gpt-6-sol" --design C --test-law saturating_ohm
+```
+
+### Autonomous Experiments, Self-Improvement, Leaderboard
+
+| File | What it does |
+|---|---|
+| `experiment.py` | The agent runs the whole experiment itself from one fixed objective prompt. Full runs go to `results/runs/`, summary rows to `results/experiments.tsv`. |
+| `rsi.py` | The self-improvement loop described in the methodology above. |
+| `compare.py` | Leaderboard per design from each model's latest runs (`--law`, `--latest`). |
+
+### The 3D Page
+
+- Tabs **S, A, B, C** pick the design.
+- **S**: *Play dataset* animates the simulated run. The force chart shows the 20 rows the agent receives, and *Prompt sent to the agent* shows the exact prompt.
+- **A to C**: move the slider and press *Measure force* or *Release block*.
+- Type a formula and press *Submit*, or pick an agent and press *Run*.
+- **Evaluator view** draws the hidden law as a dashed line for explaining results. Agents never get it.
+- The page also shows the leaderboard and can replay any saved run.
+
+## Testing Real Models
+
+### Ollama (free, local)
+
+```powershell
+ollama pull qwen2.5-coder:7b
+py pipeline.py --list                 # should now list the Ollama agents
+py pipeline.py --datasets 10          # start small
+```
+
+`models.json` lists the models. Entries whose model is not pulled, or whose API key is not set, are skipped automatically. For an API model, replace `SET-MODEL-ID` with the provider's model id and set the key in the terminal (the RapidScreen models share `RAPIDSCREEN_API_KEY`):
+
+```powershell
+$env:RAPIDSCREEN_API_KEY = "..."      # macOS/Linux: export RAPIDSCREEN_API_KEY=...
+```
+
+Never put keys in files, and never commit raw API logs.
+
+### CrewAI Framework
+
+`framework/physics_discovery_flow.py` is the team's theorist + analyst flow, unchanged. `agents_crewai.py` runs it inside the pipeline by passing in the dataset, asking for a last line `FINAL FORMULA: $$F(x) = ...$$`, and reading the model from `models.json`.
+
+```powershell
+py -m pip install crewai
+py pipeline.py --agents "CrewAI framework (qwen2.5-coder:7b)" --datasets 5
+```
+
+### Terminal Agents (Codex, Kilo)
+
+`cli.py` runs any design step by step:
 
 ```text
-numpy
-pandas
-sympy
-matplotlib
-litellm
-crewai
-ollama
-streamlit
+py cli.py new --design S --seed 0 --agent-name codex
+py cli.py exp <session> '{"release": {"x0": 2.0}}'      (designs A-C)
+py cli.py submit <session> "F(x) = ..."
 ```
 
-## Configuration
+Results go to `results/external.tsv`. A coding agent with file access could open `laws.py` and read the answer, so for real numbers run it where that file is hidden (for example in a Docker container that only exposes `cli.py`). An agent that has already seen the formula is not a fair test subject.
 
-Create a `.env` file in the repository root:
+## Repository Files
 
-```env
-RAPIDSCREEN_API_KEY=your_api_key
-OPENAI_API_KEY=your_api_key
-DEEPSEEK_API_KEY=your_api_key
-```
+| File | What it does |
+|---|---|
+| `laws.py` | The hidden laws. Only the sandbox and evaluator read it. |
+| `sandbox_env.py` | The 4 designs, experiment budget, noise, logging, static datasets. |
+| `generate_data.py` | Writes the 50 CSV datasets per law. |
+| `pipeline.py` | The evaluation pipeline over the CSV datasets. |
+| `grader.py` | Formula extraction + SymPy evaluator. |
+| `agent.py` | Baselines, the LLM agent, and the team prompt. |
+| `agents_crewai.py` | Runs the CrewAI framework as an agent. |
+| `experiment.py`, `rsi.py`, `compare.py` | Autonomous runs, self-improvement, leaderboard. |
+| `bench.py` | Compares agents across designs S, A, B, C. |
+| `cli.py` | Step-by-step terminal version for coding agents. |
+| `models.json` | Which models to test. |
+| `server.py`, `index.html`, `static/` | The 3D sandbox (three.js included, works offline). |
+| `framework/` | The team's CrewAI framework (unchanged). |
+| `tests/` | `test_sandbox.py` (20 checks), `crewai_smoke.py` (needs crewai). |
 
-Do not commit API keys, `.env` files, raw API logs, or model outputs containing sensitive information.
+## Extending
 
-## Running the Benchmark
-
-Example commands may need adjustment to match the final code structure.
-
-### Generate Sandbox Data
-
-```bash
-python src/sandbox/static_sweeps.py --law spring --design S
-python src/sandbox/spring_simulation.py --design B
-```
-
-### Run a Single-Agent Evaluation
-
-```bash
-python src/agents/single_agent.py \
-  --model gpt-6-sol \
-  --design A \
-  --law spring \
-  --runs 10
-```
-
-### Run the Noisy-Lab Benchmark
-
-```bash
-python src/agents/single_agent.py \
-  --model gpt-5.5 \
-  --design C \
-  --law kinetic_energy \
-  --runs 10
-```
-
-### Run Recursive Self-Improvement
-
-```bash
-python src/agents/self_improvement.py \
-  --model gpt-5.4-nano \
-  --practice-law spring \
-  --test-laws kinetic_energy,wave_speed,screened_coulomb,saturating_ohm \
-  --rounds 3
-```
-
-### Run the CrewAI Multi-Agent System
-
-```bash
-python src/agents/crewai_agents.py \
-  --model deepseek-v4-flash \
-  --design S \
-  --law spring
-```
-
-### Grade Submitted Equations
-
-```bash
-python src/evaluation/sympy_grader.py \
-  --logs logs/runs \
-  --output results/tables/grading_results.csv
-```
-
-## Output Format
-
-Every run is saved as a JSON log containing:
-
-- The task objective
-- Each action and experimental result
-- The full agent conversation
-- The submitted final equation
-- The grading result
-- Execution time
-- Token usage
-- Experimental design
-- Model name
-- Hidden law identifier
-
-Design S answers are stored in full so that they can be regraded without making new API calls.
-
-## 3D Visualization
-
-A browser-based Three.js interface can replay saved experimental runs. It visualizes trajectories and tracks per-law leaderboards, making it easier to inspect how an agent explored the sandbox and where its reasoning failed.
+- **New law:** add one `Law(...)` in `laws.py` with a Python function and the same law as a SymPy string, then run `py generate_data.py --law <name>` and `py pipeline.py --law <name>`.
+- **New model:** add an entry to `models.json`.
+- **New agent strategy** (reflection, memory, self-evolving): subclass `Agent` in `agent.py` with a `run(lab)` method and add it to `all_agents()`.
 
 ## Limitations
 
-- The benchmark uses only single-input laws; it does not test multi-variable or coupled differential-equation systems.
-- No real laboratory data are used; all experiments occur in simulation.
-- No model was trained or fine-tuned.
-- “Self-improvement” refers to written strategy notes, not parameter updates or reinforcement learning.
-- Commercial models were accessed through an API, so model versions and behavior may change over time.
-- Some Design S evaluations were incomplete because of an API-key change; five models were evaluated only on kinetic energy.
-- Design B was tested only on the spring law.
-- The RSI experiment used a limited number of runs, reducing statistical power.
-- CrewAI token counts are estimates because the API does not report token usage directly to CrewAI.
+- Single-input laws only; motion is 1D along the rail. The benchmark does not test multi-variable or coupled systems.
+- Simulated data only; no real laboratory measurements.
+- No model was trained or fine-tuned. "Self-improvement" means written strategy notes, not parameter updates or reinforcement learning.
+- Commercial models were accessed through an API, so versions and behavior may change over time.
+- Some Design S evaluations are incomplete because of an API-key change (five models were evaluated only on kinetic energy). Design B covers only the spring law.
+- The RSI experiment used few runs, which limits statistical power.
+- CrewAI token counts are estimates, because the API does not report token usage to CrewAI.
 - API content-filter blocks and strict LaTeX parsing failures were counted as task failures.
+- Pass tolerances (1%, 2%, 3%) are our choice. Change them in `DESIGNS` in `sandbox_env.py`.
+- Datasets with a small release position (|x0| = 0.5 m) cover only a small range of x, so they are harder. That is intended.
 
-## Future Work
-
-Planned extensions include:
-
-- Completing all five laws across all nine commercial models in Design S.
-- Testing larger open-weight models, such as 32B to 70B+ parameter models, to identify the point at which open-source models begin discovering laws reliably.
-- Extending passive trajectory inference to coupled multi-variable systems.
-- Adding tool-augmented reflection, allowing compact models to run regression checks and receive residual feedback.
-- Developing hybrid pipelines that use fast single-prompt inference and trigger multi-agent verification only when out-of-sample error exceeds a threshold.
-- Testing models without explicit task instructions to better measure fully autonomous scientific behavior.
+Results and future work: [docs/results.md](docs/results.md). Review notes on the team's original scripts: [docs/team_code_notes.md](docs/team_code_notes.md).
 
 ## Acknowledgments
 
-Thanks to mentor **Fan Xiaoyan** for valuable guidance, and to **MyResearchGuide** for resources and programme organization.
+Thanks to mentor **Fan Xiaoyan** and to **MyResearchGuide** for guidance, resources, and programme organization.
 
 ## License
 
-Add an appropriate open-source license before publishing the repository, for example:
-
-```text
-MIT License
-```
+MIT License. See [LICENSE](LICENSE).
 
 ## Citation
-
-If you use this benchmark or build on this work, please cite the original research paper:
 
 ```bibtex
 @misc{prasad2026benchmarking,
   title={Benchmarking Self-Evolving AI Agents for Automated Physics Discovery},
   author={Ananya Prasad and Tang Yi Zhe and Muhammad Adief Al Syarif bin Abdullah},
   year={2026},
-  howpublished={Malaysia Science Scholar’s Programme 2026},
-  url={[https://github.com/Pyth66666/MYSSP-PROJECT-A-3](https://github.com/Pyth66666/MYSSP-PROJECT-A-3)}
+  howpublished={Malaysia Science Scholar's Programme 2026},
+  url={https://github.com/Pyth66666/MYSSP-PROJECT-A-3}
 }
 ```
